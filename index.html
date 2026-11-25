@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-title" content="Group Connect">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
-:root{--pri:#4f46e5;--pri-d:#4338ca;--teal:#0d9488;--bg:#f4f5fb;--card:#fff;--text:#1f2430;--muted:#6b7280;--line:#e5e7ef;--danger:#dc2626;--warn:#b45309;--ok:#15803d;--wa:#25d366;--mem:#475569;--radius:14px;--shadow:0 1px 3px rgba(20,20,60,.08),0 4px 14px rgba(20,20,60,.05);--nav-h:62px}
+:root{--pri:#4f46e5;--pri-d:#4338ca;--teal:#0d9488;--bg:#f4f5fb;--card:#fff;--text:#1f2430;--muted:#596070;--line:#e5e7ef;--danger:#dc2626;--warn:#b45309;--ok:#15803d;--wa:#25d366;--mem:#475569;--radius:14px;--shadow:0 1px 3px rgba(20,20,60,.08),0 4px 14px rgba(20,20,60,.05);--nav-h:62px}
 @media (prefers-color-scheme:dark){:root{--bg:#10121a;--card:#1a1d29;--text:#e8eaf2;--muted:#9aa1b5;--line:#2b2f40;--shadow:0 1px 3px rgba(0,0,0,.4)}.avatar{background:#2b3050!important;color:#c7cbff!important}.chip{background:#252a3d!important}input.inp,select.inp,textarea.inp{background:#12141d!important;color:var(--text)!important}.btn{background:#232738;color:var(--text)}.btn.ghost{background:transparent}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -181,6 +181,18 @@ textarea.msg{font-size:.98rem;line-height:1.5}
 .tblwrap{overflow-x:auto}.tblwrap .tbl td,.tblwrap .tbl th{vertical-align:top}
 .quick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:0 0 12px}.quick .btn{min-height:48px}@media(min-width:700px){.quick{grid-template-columns:repeat(4,1fr)}}
 @media(pointer:coarse){.btn.sm{min-height:40px}.btn.xs{min-height:34px}}
+/* dark-mode buttons: readable text on a dark surface (plain buttons were white with pale text) */
+@media (prefers-color-scheme:dark){.btn{background:#2a2f45;border-color:#434a69;color:#eef0fa}.btn.ghost{background:transparent}.btn.danger-o{color:#ff9a9a;border-color:#8a3a3a;background:transparent}.btn.primary,.btn.ok,.btn.danger,.btn.wa{filter:none}a:not(.btn){color:#b4bfff}.nav a.on,.nav #nav-more.on,#more-sheet a.on{color:#b4bfff!important}.gchip{background:#2a2f45!important}.tag{filter:none}.tbl th{color:#c3c8dc}}
+input.inp[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;min-height:44px}
+/* phone menu: 4 main items + "More" sheet so Data, Settings and Help are always reachable */
+.nav #nav-more{display:none;flex:1 0 auto;min-width:68px;flex-direction:column;align-items:center;justify-content:center;padding:7px 4px;color:var(--muted);font:inherit;font-size:.7rem;font-weight:600;gap:1px;background:none;border:0;cursor:pointer}
+.nav #nav-more span{font-size:1.3rem;line-height:1.1}.nav #nav-more.on{color:var(--pri)}
+#more-sheet{display:none}
+@media(max-width:899px){.nav{overflow-x:visible}.nav a.more-item{display:none}.nav #nav-more{display:flex}.nav a{min-width:0}
+  #more-sheet.open{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;position:fixed;left:10px;right:10px;bottom:calc(var(--nav-h) + 12px + env(safe-area-inset-bottom));z-index:30;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  #more-sheet a{display:flex;align-items:center;gap:10px;padding:14px 12px;min-height:52px;border:1px solid var(--line);border-radius:12px;color:var(--text);font-weight:600;font-size:1rem;background:var(--bg)}
+  #more-sheet a.on{border-color:var(--pri);color:var(--pri)}#more-sheet a span{font-size:1.4rem}
+  body.locked #more-sheet{display:none!important}}
 .faq{padding:0}.faq summary{padding:14px 16px;cursor:pointer;list-style:none}.faq summary::-webkit-details-marker{display:none}.faq summary::before{content:'▸ ';color:var(--pri)}.faq[open] summary::before{content:'▾ '}.faq-a{padding:0 16px 14px;font-size:.95rem}.faq-a ol,.faq-a ul{padding-left:20px}code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:.88em}
 
 </style>
@@ -211,12 +223,12 @@ textarea.msg{font-size:.98rem;line-height:1.5}
   <a href="#/members" data-route="members"><span>👥</span><b>Members</b></a>
   <a href="#/memory" data-route="memory"><span>🕯️</span><b>Memory</b></a>
   <a href="#/calendar" data-route="calendar"><span>📅</span><b>Calendar</b></a>
-  <a href="#/messages" data-route="messages"><span>✉️</span><b>Messages</b></a>
-  <a href="#/reports" data-route="reports"><span>📈</span><b>Reports</b></a>
-  <a href="#/reminders" data-route="reminders"><span>🔔</span><b>Reminders</b></a>
-  <a href="#/data" data-route="data"><span>💾</span><b>Data</b></a>
-  <a href="#/settings" data-route="settings"><span>⚙️</span><b>Settings</b></a>
-  <a href="#/help" data-route="help"><span>❓</span><b>Help</b></a>
+  <a class="more-item" href="#/messages" data-route="messages"><span>✉️</span><b>Messages</b></a>
+  <a class="more-item" href="#/reports" data-route="reports"><span>📈</span><b>Reports</b></a>
+  <a class="more-item" href="#/reminders" data-route="reminders"><span>🔔</span><b>Reminders</b></a>
+  <a class="more-item" href="#/data" data-route="data"><span>💾</span><b>Data</b></a>
+  <a class="more-item" href="#/settings" data-route="settings"><span>⚙️</span><b>Settings</b></a>
+  <a class="more-item" href="#/help" data-route="help"><span>❓</span><b>Help</b></a>
 </nav>
 
 <main id="view" tabindex="-1"><div class="loading">Loading…</div></main>
@@ -1824,7 +1836,21 @@ textarea.msg{font-size:.98rem;line-height:1.5}
         <div class="fgrid"><label>Occasion<select id="nm-occ" class="inp"><option value="birthday">Birthday</option><option value="birth_anniv">Birth anniversary</option><option value="death_anniv">Death anniversary</option></select></label>
         <label>For<select id="nm-aud" class="inp"><option value="group">WhatsApp group (posted by admin)</option><option value="personal">Personal (birthdays of living members only)</option></select></label></div><p class="small muted">Remembrance messages (birth &amp; death anniversaries) are always posted in the group by the admin – never sent individually.</p>
         <textarea id="nm-text" class="inp" rows="5" placeholder="Write your message. You may use {nameH} (Mr. Rajesh Kumar), {first}, {full}, {his}/{him}, {contact} (mobile line), {greet}, {sign}."></textarea>
-        <div class="btn-row"><button class="btn primary" id="nm-save">💾 Save my message</button></div></div>`;
+        <div class="btn-row"><button class="btn primary" id="nm-save">💾 Save my message</button></div>
+        <h3>Paste or upload many messages</h3>
+        <p class="small muted">Paste several messages below, with a line containing only <code>---</code> between them, or upload a <b>.txt</b> file (same format) or a <b>.csv</b> file (one message per row, in the first column). Choose the Occasion and For above, check the text, then save. Tags like {nameH} and {first} work.</p>
+        <textarea id="nm-bulk" class="inp" rows="6" placeholder="Message one…&#10;---&#10;Message two…"></textarea>
+        <div class="btn-row"><label class="btn">📂 Upload .txt / .csv<input type="file" id="nm-file" accept=".txt,.csv,text/plain,text/csv" hidden></label><button class="btn primary" id="nm-bulk-save">💾 Save these messages</button></div></div>`;
+    const nmFile = el.querySelector('#nm-file');
+    if (nmFile) nmFile.addEventListener('change', async e => {
+      const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+      if (f.size > 1e6) return UI.toast('That file is too large for messages (limit 1 MB).', 'err');
+      try {
+        let txt = await f.text();
+        if (/\.csv$/i.test(f.name)) { const rows = GC.parseCSV(txt).map(r => (r[0] || '').trim()).filter(Boolean); if (rows.length && /^(message|text)$/i.test(rows[0])) rows.shift(); txt = rows.join('\n---\n'); }
+        el.querySelector('#nm-bulk').value = txt.replace(/^\uFEFF/, ''); UI.toast('File loaded – check the text, then tap Save these messages', 'ok');
+      } catch (err) { UI.alert('Could not read the file', UI.esc(err.message)); }
+    });
     el.onchange = e => {
       const t = e.target;
       if (t.id === 'ml-occ') { ML.occ = t.value; V.messages(el); } else if (t.id === 'ml-aud') { ML.aud = t.value; V.messages(el); }
@@ -1838,6 +1864,15 @@ textarea.msg{font-size:.98rem;line-height:1.5}
       if (c) { (await UI.copy(GC.render(list[+c.dataset.copy], ctx))) ? UI.toast('Copied') : UI.toast('Copy failed', 'err'); }
       if (f) { await GC.db.put('customMessages', { id: GC.uid(), kind: 'favourite', occasion: ML.occ, audience: isB ? ML.aud : 'group', text: list[+f.dataset.fav], createdAt: new Date().toISOString() }); UI.toast('Saved ⭐'); V.messages(el); }
       if (d) { await GC.db.del('customMessages', d.dataset.delfav); V.messages(el); }
+      if (e.target.id === 'nm-bulk-save') {
+        const parts = el.querySelector('#nm-bulk').value.split(/^\s*-{3,}\s*$/m).map(s => s.trim()).filter(Boolean);
+        if (!parts.length) return UI.toast('Paste or upload at least one message first', 'err');
+        if (parts.length > 200) return UI.toast('Please add at most 200 messages at a time', 'err');
+        if (parts.some(s => s.length > 3000)) return UI.toast('One message is longer than 3000 characters', 'err');
+        const occ = el.querySelector('#nm-occ').value, aud = occ === 'birthday' ? el.querySelector('#nm-aud').value : 'group', now = new Date().toISOString();
+        await GC.db.putMany('customMessages', parts.map(t => ({ id: GC.uid(), kind: 'custom', occasion: occ, audience: aud, text: t, createdAt: now })));
+        UI.toast(parts.length + ' message' + (parts.length === 1 ? '' : 's') + ' saved', 'ok'); V.messages(el); return;
+      }
       if (e.target.id === 'nm-save') {
         const t = el.querySelector('#nm-text').value.trim(); if (!t) return UI.toast('Please write a message first', 'err');
         await GC.db.put('customMessages', { id: GC.uid(), kind: 'custom', occasion: el.querySelector('#nm-occ').value, audience: el.querySelector('#nm-occ').value === 'birthday' ? el.querySelector('#nm-aud').value : 'group', text: t, createdAt: new Date().toISOString() });
@@ -2072,6 +2107,10 @@ textarea.msg{font-size:.98rem;line-height:1.5}
         <ol class="small"><li>Download the template and fill it in (living and deceased members can be in the same sheet).</li><li>Choose the file below. You will see a review table where mistakes can be corrected before anything is saved.</li></ol>
         <div class="btn-row"><button class="btn" data-act="tpl-xlsx">⬇ Excel template (.xlsx)</button><button class="btn" data-act="tpl-csv">⬇ CSV template</button>
           <label class="btn primary">📂 Choose Excel / CSV file<input type="file" id="imp-file" accept=".xlsx,.xls,.csv,.txt,text/csv" hidden></label></div>
+        <details class="paste-box"><summary><b>Or paste your list</b> (copied from Excel, Google Sheets or WhatsApp-style text)</summary>
+          <p class="small muted">Copy the rows <b>including the heading row</b> (same headings as the template) and paste them here.</p>
+          <textarea id="imp-paste" class="inp" rows="6" placeholder="Full Name&#9;Gender&#9;Mobile&#9;Date of Birth&#10;Rajesh Kumar&#9;Male&#9;9810000001&#9;15-08-1965"></textarea>
+          <div class="btn-row"><button class="btn primary" id="imp-paste-go">Review pasted list</button></div></details>
         <div id="imp-box"></div></section>
       <section class="card"><h2>📤 Export</h2><p class="small muted">Includes everyone – living and deceased. Excel format keeps phone numbers intact.</p>
         <div class="btn-row"><button class="btn" data-act="exp-xlsx">Excel (.xlsx)</button><button class="btn" data-act="exp-csv">CSV</button><button class="btn" data-act="exp-json">JSON (complete data)</button></div></section>
@@ -2081,6 +2120,7 @@ textarea.msg{font-size:.98rem;line-height:1.5}
       <section class="card"><h2>🔎 Data quality check</h2><p class="small muted">Finds duplicate mobile numbers and missing or invalid dates.</p><div class="btn-row"><button class="btn" data-act="dq">Run check</button></div><div id="dq"></div></section>
       <section class="card"><h2>🧪 Demonstration records</h2><p class="small muted">Demo members are clearly marked <span class="tag demo">DEMO</span> and use dummy phone numbers. ${demoCount ? `You currently have <b>${demoCount}</b>.` : ''}</p>
         <div class="btn-row"><button class="btn" data-act="demo-add">Add demo records</button><button class="btn danger-o" data-act="demo-del" ${demoCount ? '' : 'disabled'}>Remove all demo records</button></div></section>`;
+    el.querySelector('#imp-paste-go').onclick = () => { const t = el.querySelector('#imp-paste').value; if (!t.trim()) return UI.toast('Paste your list first', 'err'); startImport(el, new File([t], 'pasted.csv', { type: 'text/csv' })); };
     el.querySelector('#imp-file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) startImport(el, f); };
     el.querySelector('#rs-file').onchange = async e => {
       const f = e.target.files[0]; e.target.value = ''; if (!f) return;
@@ -2305,6 +2345,9 @@ textarea.msg{font-size:.98rem;line-height:1.5}
     ['personal', 'Sending a personal wish', 'personal individual direct chat wish one person',
       `<p><b>Remembrance (deceased members):</b> birth and death anniversary tributes are posted in the WhatsApp group by the admin only. There is no personal message, and the member's mobile number is never shown unless you have authorised it.</p><p>For living members, tap <b>🎁 Personal wish</b>. A shorter greeting addressed to the person is prepared. <b>↗ Open chat</b> opens that member's own WhatsApp conversation with the text filled in. Press Send in WhatsApp.</p>
        <p>The little <b>WhatsApp ↗</b> button on every card opens a blank chat with the member.</p>`],
+    ['paste', 'Pasting or uploading messages and member lists', 'paste upload messages bulk txt csv import list copy',
+      `<p><b>Messages:</b> open <b>✉️ Messages</b>, scroll to <i>Paste or upload many messages</i>. Choose the occasion, paste your messages with a line <code>---</code> between them (or upload a .txt/.csv file), then tap <b>Save these messages</b>. Remembrance messages are always saved for the group.</p>
+       <p><b>Members:</b> open <b>💾 Data</b> (on a phone: <b>☰ More → Data</b>), tap <i>Or paste your list</i>, paste rows copied from Excel including the heading row, then <b>Review pasted list</b>. Or choose an Excel/CSV file.</p>`],
     ['reports', 'Reports: lists, printing and export', 'report print pdf month group summary confirmed pending history export csv',
       `<p>Open <b>📈 Reports</b>. Choose a report: totals, group-wise members, month-wise birthdays, month-wise remembrance dates, upcoming occasions, message history, messages confirmed as sent, or messages still pending.</p>
        <p>Tap <b>🖨 Print</b> to print or save as PDF, or <b>⬇ Download CSV</b> to open it in Excel. Mobile numbers of deceased members are never included.</p>`],
@@ -2403,6 +2446,7 @@ textarea.msg{font-size:.98rem;line-height:1.5}
     const el = main(); el.onclick = el.onchange = el.oninput = null;
     const key = ['member', 'add', 'edit'].includes(name) ? (name === 'member' ? 'members' : name === 'add' && q.deceased ? 'memory' : 'members') : (name === 'today' ? 'dashboard' : name);
     document.querySelectorAll('[data-route]').forEach(a => a.classList.toggle('on', a.dataset.route === key));
+    GC.syncMore && GC.syncMore(key);
     el.innerHTML = '<div class="loading">Loading…</div>';
     try {
       lastRenderDate = GC.nowParts((await GC.getSettings()).tz).date;
@@ -2410,6 +2454,20 @@ textarea.msg{font-size:.98rem;line-height:1.5}
     } catch (e) { console.error(e); el.innerHTML = `<div class="card"><h2>Something went wrong</h2><p class="bad">${UI.esc(e.message || e)}</p><a class="btn" href="#/dashboard">Go to dashboard</a></div>`; }
     window.scrollTo(0, 0);
   };
+  /* Phone menu: build the "More" button and sheet from the nav links marked .more-item */
+  (function () {
+    const nav = document.getElementById('nav'); if (!nav || document.getElementById('nav-more')) return;
+    const items = [...nav.querySelectorAll('a.more-item')];
+    const btn = document.createElement('button'); btn.id = 'nav-more'; btn.type = 'button'; btn.setAttribute('aria-expanded', 'false'); btn.innerHTML = '<span>☰</span><b>More</b>';
+    const sheet = document.createElement('div'); sheet.id = 'more-sheet'; sheet.setAttribute('aria-label', 'More menu');
+    sheet.innerHTML = items.map(a => `<a href="${a.getAttribute('href')}" data-route="${a.dataset.route}">${a.querySelector('span').textContent}<b>${a.querySelector('b').textContent}</b></a>`).join('');
+    nav.appendChild(btn); document.body.appendChild(sheet);
+    const set = open => { sheet.classList.toggle('open', open); btn.setAttribute('aria-expanded', String(open)); };
+    btn.addEventListener('click', e => { e.stopPropagation(); set(!sheet.classList.contains('open')); });
+    sheet.addEventListener('click', () => set(false));
+    document.addEventListener('click', e => { if (!sheet.contains(e.target)) set(false); });
+    GC.syncMore = key => { btn.classList.toggle('on', items.some(a => a.dataset.route === key)); set(false); };
+  })();
   window.addEventListener('hashchange', () => GC.router());
 
   /* ---------- PIN lock ---------- */
