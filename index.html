@@ -20,7 +20,7 @@
 @media (prefers-color-scheme:dark){:root{--bg:#10121a;--card:#1a1d29;--text:#e8eaf2;--muted:#9aa1b5;--line:#2b2f40;--shadow:0 1px 3px rgba(0,0,0,.4)}.avatar{background:#2b3050!important;color:#c7cbff!important}.chip{background:#252a3d!important}input.inp,select.inp,textarea.inp{background:#12141d!important;color:var(--text)!important}.btn{background:#232738;color:var(--text)}.btn.ghost{background:transparent}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari",sans-serif;background:var(--bg);color:var(--text);line-height:1.45;font-size:16px}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari",sans-serif;background:var(--bg);color:var(--text);line-height:1.45;font-size:1rem}
 body.modal-open{overflow:hidden}
 body.locked .topbar,body.locked .nav,body.locked main{display:none}
 a{color:var(--pri);text-decoration:none}a:hover{text-decoration:underline}
@@ -202,6 +202,9 @@ main{padding-bottom:6px!important}
 .v-ans{margin-top:10px;padding:12px 14px;border:1px solid var(--line);border-left:4px solid var(--pri);border-radius:12px;background:var(--bg)}
 .v-a{font-size:1.1rem;line-height:1.5;margin:.3em 0 0}
 @media print{.credit{padding-bottom:0}}
+.consent-box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0}.consent-box legend{font-weight:700;padding:0 6px}
+.chip.cs-obtained{background:#dcfce7!important;color:#14532d}.chip.cs-pending{background:#fef3c7!important;color:#78350f}.chip.cs-declined{background:#fee2e2!important;color:#7f1d1d}.chip.cs-none{background:#e5e7eb!important;color:#1f2937}
+ul.plain{margin:.2em 0 .6em;padding-left:1.2em}
 .faq{padding:0}.faq summary{padding:14px 16px;cursor:pointer;list-style:none}.faq summary::-webkit-details-marker{display:none}.faq summary::before{content:'▸ ';color:var(--pri)}.faq[open] summary::before{content:'▾ '}.faq-a{padding:0 16px 14px;font-size:.95rem}.faq-a ol,.faq-a ul{padding-left:20px}code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:.88em}
 
 </style>
@@ -234,6 +237,7 @@ main{padding-bottom:6px!important}
   <a href="#/memory" data-route="memory"><span>🕯️</span><b>Memory</b></a>
   <a href="#/calendar" data-route="calendar"><span>📅</span><b>Calendar</b></a>
   <a class="more-item" href="#/messages" data-route="messages"><span>✉️</span><b>Messages</b></a>
+  <a class="more-item" href="#/groups" data-route="groups"><span>🗂</span><b>Groups</b></a>
   <a class="more-item" href="#/reports" data-route="reports"><span>📈</span><b>Reports</b></a>
   <a class="more-item" href="#/reminders" data-route="reminders"><span>🔔</span><b>Reminders</b></a>
   <a class="more-item" href="#/data" data-route="data"><span>💾</span><b>Data</b></a>
@@ -254,7 +258,7 @@ main{padding-bottom:6px!important}
 (function (root) {
   'use strict';
   const GC = root.GC || (root.GC = {});
-  GC.VERSION = '1.3.0';      // keep in step with CACHE in service-worker.js (group-connect-v<VERSION>)
+  GC.VERSION = '1.4.0';      // keep in step with CACHE in service-worker.js (group-connect-v<VERSION>)
   GC.BG_SYNC = false;         // true only when the service worker can run reminders itself (multi-file build); the single-file build sets false
 
   /* ---------- tiny helpers ---------- */
@@ -329,7 +333,8 @@ main{padding-bottom:6px!important}
     reminderTime: '05:00', notifEnabled: false, advanceEnabled: true, advanceDays: [1],
     weeklyEnabled: true, weeklyDay: 1, hideNames: false,
     preferredGroup: '', groups: [], autoLockMin: 5, remTone: 'respectful',
-    pinHash: '', pinSalt: '', demoLoaded: false, tplOverrides: {}
+    pinHash: '', pinSalt: '', demoLoaded: false, tplOverrides: {},
+    lastReminderCheck: '', lastBackupAt: '', backupRemind: true, consentRespect: true, fontScale: 'normal'
   };
   GC.getSettings = async function () {
     const rows = await GC.db.all('settings');
@@ -442,8 +447,15 @@ main{padding-bottom:6px!important}
     id: GC.uid(), name: '', title: '', gender: '', mobile: '', whatsapp: '', dob: '', email: '', address: '',
     profession: '', groups: [], intro: '', photo: '', status: 'living', dod: '', remarks: '',
     familyName: '', familyContact: '', bio: '', showPhone: false, demo: false,
+    consent: { status: '', date: '', method: '', remarks: '' },
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
   });
+  /* Consent: '' = Not recorded (every record that existed before v1.4.0), 'obtained', 'pending', 'declined'. Never assumed. */
+  GC.CONSENT = { '': 'Not recorded', obtained: 'Obtained', pending: 'Pending', declined: 'Declined / withdrawn' };
+  GC.CONSENT_METHOD = ['Written', 'WhatsApp', 'Verbal', 'Other'];
+  GC.consentOf = m => (m && m.consent && GC.CONSENT.hasOwnProperty(m.consent.status)) ? m.consent.status : '';
+  GC.consentLabel = m => GC.CONSENT[GC.consentOf(m)];
+  GC.applyFont = f => { const p = { normal: '100%', large: '115%', xlarge: '130%' }[f] || '100%'; document.documentElement.style.fontSize = p; try { localStorage.setItem('gc-font', f || 'normal'); } catch (e) { } };
   GC.firstName = m => (m.name || '').trim().split(/\s+/)[0] || '';
   GC.initials = m => (m.name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
   GC.honorific = function (m) {
@@ -570,7 +582,8 @@ main{padding-bottom:6px!important}
     const now = GC.nowParts(S.tz);
     const [rh, rm] = (S.reminderTime || '05:00').split(':').map(Number);
     if (!opts.force && now.hour * 60 + now.minute < rh * 60 + rm) return { skipped: 'before-time', shown: 0 };
-    const members = await GC.db.all('members');
+    let members = await GC.db.all('members');
+    if (S.consentRespect !== false) members = members.filter(m => GC.consentOf(m) !== 'declined');   // consent declined/withdrawn: no reminders
     const done = new Set((await GC.db.all('reminderHistory')).map(h => h.key));
     const groups = [];
     const today = GC.upcoming(members, now.date, 0).map(o => Object.assign(o, { kind: 'today' }));
@@ -609,6 +622,7 @@ main{padding-bottom:6px!important}
         await GC.db.put('reminderHistory', { key: 'weekly|' + now.date, kind: 'weekly', name: `Weekly summary (${weekly.length} occasion${weekly.length === 1 ? '' : 's'})`, type: 'weekly', occDate: now.date, notifiedAt: stamp });
       }
     }
+    await GC.setSetting('lastReminderCheck', new Date().toISOString());   // a check that ran to completion
     return { shown };
   };
 })(typeof self !== 'undefined' ? self : this);
@@ -830,6 +844,9 @@ main{padding-bottom:6px!important}
   GC.TEMPLATES = { group: G, personal: P, remembrance: R };
 
   /* Templates the admin has edited are kept in settings.tplOverrides, keyed by position. */
+  /* Groups of people a user's own greeting can be filed under */
+  GC.CUSTOM_CATS = [['', 'General'], ['senior', 'Senior colleagues'], ['retired', 'Retired colleagues'], ['professional', 'Professional contacts'], ['friends', 'Friends'], ['younger', 'Younger members'], ['family', 'Family'], ['other', 'Other']];
+  GC.customCatLabel = k => (GC.CUSTOM_CATS.find(c => c[0] === (k || '')) || ['', 'General'])[1];
   GC.OV = {};
   GC.loadOverrides = async function () { try { GC.OV = (await GC.getSettings()).tplOverrides || {}; } catch (e) { GC.OV = {}; } };
   GC.tplBase = function (occasion, audience, cat, tone) {
@@ -1134,7 +1151,9 @@ main{padding-bottom:6px!important}
     if (f.dob && dob === null) errs.push('Date of birth "' + f.dob + '" is not readable');
     if (f.dod && dod === null) errs.push('Date of death "' + f.dod + '" is not readable');
     m.email = f.email || ''; m.address = f.address || ''; m.profession = f.profession || '';
-    m.groups = (f.groups || '').split(/[;,|\n]/).map(s => s.trim()).filter(Boolean);
+    m.groups = [...new Set((f.groups || '').split(/[;,|\n]/).map(s => s.trim().replace(/\s+/g, ' ')).filter(Boolean))];
+    if (!m.groups.length) warns.push('No WhatsApp group given – the member will not appear under any group.');
+    if (m.groups.some(g => g.length > 60)) errs.push('A group name is longer than 60 characters – please check the Group(s) column.');
     m.intro = f.intro || ''; m.remarks = f.remarks || ''; m.bio = f.bio || '';
     m.familyName = f.familyName || '';
     const fp = GC.normPhone(f.familyContact, S.defaultCC); m.familyContact = fp.ok ? fp.value : (f.familyContact || '');
@@ -1372,7 +1391,7 @@ main{padding-bottom:6px!important}
       return GC.render(list[i], GC.makeContext(m, occ, S));
     };
     const opt = (arr, cur) => arr.map(([v, l]) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`).join('');
-    const favOpts = aud => favs.filter(f => f.audience === aud).map(f => `<option value="${f.id}">${esc(f.text.slice(0, 50).replace(/\n/g, ' '))}…</option>`).join('');
+    const favOpts = aud => favs.filter(f => f.audience === aud).map(f => `<option value="${f.id}">${f.cat ? esc('[' + GC.customCatLabel(f.cat) + '] ') : ''}${esc(f.text.slice(0, 50).replace(/\n/g, ' '))}…</option>`).join('');
     const pane = aud => `
       <div class="pane" data-pane="${aud}" ${st.tab === aud ? '' : 'hidden'}>
         <div class="row2">
@@ -1401,6 +1420,7 @@ main{padding-bottom:6px!important}
     const api = UI.modal({
       title, wide: true, noFocus: true,
       body: `<div class="muted small" style="margin-bottom:8px">${esc(GC.fmtDate(occ.date))} · ${esc(UI.occTitle(occ))}</div>
+        ${GC.consentOf(m) === 'declined' ? `<div class="card note" style="margin:0 0 8px">⚠ <b>Consent declined / withdrawn.</b> Please do not send a greeting to this member unless they have agreed again.</div>` : GC.consentOf(m) === 'pending' ? `<div class="card note" style="margin:0 0 8px">ℹ Consent is still <b>pending</b> for this member.</div>` : ''}
         ${!living ? `<div class="card note" style="margin:0 0 8px">🕊️ <b>Group post by admin only.</b> Remembrance tributes are shared in the WhatsApp group – no individual message is sent.</div>` : ''}
         ${living ? `<div class="tabs"><button data-tab="group" class="${st.tab === 'group' ? 'on' : ''}">👥 WhatsApp group</button><button data-tab="personal" class="${st.tab === 'personal' ? 'on' : ''}">🎁 Personal wishes</button></div>` : ''}
         ${pane('group')}${living ? pane('personal') : ''}`
@@ -1547,6 +1567,8 @@ main{padding-bottom:6px!important}
     el.innerHTML = `
       <div class="page-head"><div><h1>Namaste${S.adminName ? ', ' + esc(S.adminName) : ''} 🙏</h1><p class="muted">${esc(new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: S.tz }))}</p></div>
         <div class="btn-row"><a class="btn primary" href="#/add">➕ Add member</a></div></div>
+      ${(() => { const S2 = C.S; if (S2.backupRemind === false || !C.members.length) return ''; const last = S2.lastBackupAt ? new Date(S2.lastBackupAt) : null; const days = last ? Math.floor((Date.now() - last) / 864e5) : null;
+        return (days === null || days > 30) ? `<div class="card note backup-banner">💾 <b>${days === null ? 'No backup has been taken yet.' : 'Your last backup was ' + days + ' days ago.'}</b> Please save an encrypted backup in a safe place (monthly reminder). <a class="btn sm primary" href="#/data">Go to Backup</a></div>` : ''; })()}
       <nav class="quick" aria-label="Quick access"><a class="btn" href="#/add">➕ Add member</a><a class="btn" href="#/messages">✉️ Messages</a><a class="btn" href="#/calendar">📅 Calendar</a><a class="btn" href="#/reports">📈 Reports</a></nav>
       ${!members.length ? `<div class="card welcome"><h2>Welcome to Group Connect</h2><p>Your member list is empty. Start by adding members one by one, import an Excel/CSV file, or load a few demo records to see how everything works (they can be removed in one click).</p>
         <div class="btn-row"><a class="btn primary" href="#/add">➕ Add first member</a><a class="btn" href="#/data">📥 Import Excel / CSV</a><button class="btn" data-act="demo">🧪 Load demo records</button></div></div>` : ''}
@@ -1582,7 +1604,7 @@ main{padding-bottom:6px!important}
   };
 
   /* ================= MEMBERS ================= */
-  const F = { q: '', status: '', group: '', month: '', dob: '', dod: '', dmonth: '', prof: '' };
+  const F = { q: '', status: '', group: '', month: '', dob: '', dod: '', dmonth: '', prof: '', consent: '' };
   function filterMembers(members) {
     const q = F.q.trim().toLowerCase(), qd = q.replace(/\D/g, '');
     return members.filter(m => {
@@ -1591,6 +1613,7 @@ main{padding-bottom:6px!important}
       if (F.month) { const d = GC.parseISO(m.dob); if (!d || d.m !== +F.month) return false; }
       if (F.dob && m.dob !== F.dob) { const d = GC.parseISO(m.dob); if (!(d && !d.hasYear && m.dob.slice(5) === F.dob.slice(5))) return false; }
       if (F.dmonth) { const d = GC.parseISO(m.dod); if (!d || d.m !== +F.dmonth) return false; }
+      if (F.consent) { const c = GC.consentOf(m); if (F.consent === 'none' ? c !== '' : F.consent === 'attention' ? !(c === 'pending' || c === 'declined') : c !== F.consent) return false; }
       if (F.prof && (m.profession || '').trim().toLowerCase() !== F.prof.toLowerCase()) return false;
       if (F.dod && m.dod !== F.dod) return false;
       if (q) {
@@ -1621,6 +1644,7 @@ main{padding-bottom:6px!important}
           <label>WhatsApp group<select id="fg" class="inp"><option value="">All groups</option>${C.groups.map(g => `<option ${F.group === g ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select></label>
           <label>Birthday month<select id="fm" class="inp"><option value="">Any</option>${mon}</select></label>
           <label>Remembrance month (death)<select id="fdm" class="inp"><option value="">Any</option>${GC.MONTHS.map((n, i) => `<option value="${i + 1}" ${F.dmonth == i + 1 ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label>Consent<select id="fcs" class="inp"><option value="">Any</option><option value="attention" ${F.consent === 'attention' ? 'selected' : ''}>Pending or declined</option><option value="none" ${F.consent === 'none' ? 'selected' : ''}>Not recorded</option><option value="obtained" ${F.consent === 'obtained' ? 'selected' : ''}>Obtained</option><option value="pending" ${F.consent === 'pending' ? 'selected' : ''}>Pending</option><option value="declined" ${F.consent === 'declined' ? 'selected' : ''}>Declined / withdrawn</option></select></label>
           <label>Profession<select id="fp" class="inp"><option value="">Any</option>${[...new Set(C.members.map(m => (m.profession || '').trim()).filter(Boolean))].sort().map(p => `<option ${F.prof.toLowerCase() === p.toLowerCase() ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
           <label>Date of birth<input id="fb" class="inp" type="date" value="${esc(F.dob)}"></label>
           <label>Date of death<input id="fd" class="inp" type="date" value="${esc(F.dod)}"></label>
@@ -1634,8 +1658,8 @@ main{padding-bottom:6px!important}
     };
     draw();
     const bind = (id, key) => el.querySelector(id).addEventListener('input', e => { F[key] = e.target.value; draw(); });
-    bind('#fq', 'q'); bind('#fs', 'status'); bind('#fg', 'group'); bind('#fm', 'month'); bind('#fb', 'dob'); bind('#fd', 'dod'); bind('#fdm', 'dmonth'); bind('#fp', 'prof');
-    el.querySelector('#freset').onclick = () => { Object.assign(F, { q: '', status: '', group: '', month: '', dob: '', dod: '', dmonth: '', prof: '' }); V.members(el); };
+    bind('#fq', 'q'); bind('#fs', 'status'); bind('#fg', 'group'); bind('#fm', 'month'); bind('#fb', 'dob'); bind('#fd', 'dod'); bind('#fdm', 'dmonth'); bind('#fp', 'prof'); bind('#fcs', 'consent');
+    el.querySelector('#freset').onclick = () => { Object.assign(F, { q: '', status: '', group: '', month: '', dob: '', dod: '', dmonth: '', prof: '', consent: '' }); V.members(el); };
     el.onclick = async e => {
       const b = e.target.closest('[data-act="del"]'); if (!b) return;
       const m = C.members.find(x => x.id === b.dataset.id);
@@ -1682,9 +1706,20 @@ main{padding-bottom:6px!important}
         ${row('Groups', (m.groups || []).map(g => `<span class="chip">${esc(g)}</span>`).join(' '))}
         ${row('About', esc(m.intro))}${row('Family contact', m.status === 'deceased' ? esc([m.familyName, m.familyContact].filter(Boolean).join(' · ')) : '')}
         ${row('Remembrance note', m.status === 'deceased' ? esc(m.bio) : '')}${row('Remarks', esc(m.remarks))}</div>
+      <div class="card"><h2>🤝 Consent</h2><p><span class="chip cs-${GC.consentOf(m) || 'none'}">${esc(GC.consentLabel(m))}</span>${m.consent && m.consent.date ? ` · ${esc(GC.fmtDate(m.consent.date))}` : ''}${m.consent && m.consent.method ? ` · ${esc(m.consent.method)}` : ''}</p>${m.consent && m.consent.remarks ? `<p class="small muted">${esc(m.consent.remarks)}</p>` : ''}
+        ${GC.consentOf(m) === 'declined' ? '<p class="warnc small">⚠ Consent declined or withdrawn – this member is left out of reminders. Please do not send greetings.</p>' : GC.consentOf(m) === '' ? '<p class="muted small">No consent has been recorded for this member yet.</p>' : ''}
+        <div class="btn-row"><a class="btn sm" href="#/edit/${m.id}">Record / update consent</a>${GC.consentOf(m) !== 'declined' ? '<button class="btn sm danger-o" data-act="withdraw">Withdraw consent</button>' : ''}<button class="btn sm danger-o" data-act="erase">Erase personal details</button></div></div>
       <div class="card"><h2>📅 Occasions in the next 12 months</h2>${ups.length ? occHTML(ups) : empty('📭', 'No birthday / anniversary dates recorded.')}</div>
       <div class="card"><h2>🗒 Message history</h2>${hist.length ? `<table class="tbl"><tr><th>Occasion</th><th>Channel</th><th>Status</th><th>Last update</th></tr>${hist.map(r => `<tr><td>${esc(GC.OCC[r.occasion] ? GC.OCC[r.occasion].label : r.occasion)}<br><small class="muted">${esc(GC.fmtDate(r.occDate))}</small></td><td>${r.channel === 'group' ? '👥 ' + esc(r.group || 'group') : '🎁 personal'}</td><td>${UI.STATUS_LABEL[r.status] || r.status}</td><td><small>${esc(UI.fmtDT(r.updatedAt, C.S.tz))}</small></td></tr>`).join('')}</table>` : '<p class="muted">No messages prepared yet.</p>'}</div>`;
     el.onclick = async e => {
+      if (e.target.closest('[data-act="withdraw"]')) {
+        if (!await UI.confirm({ title: 'Withdraw consent?', message: `Mark <b>${esc(GC.nameH(m))}</b> as <b>consent declined / withdrawn</b>? They will be left out of reminders, and greetings should not be sent. The member record is <b>not</b> deleted.`, okLabel: 'Withdraw consent', danger: true })) return;
+        m.consent = { status: 'declined', date: C.today, method: (m.consent && m.consent.method) || 'Other', remarks: 'Withdrawn on ' + GC.fmtDate(C.today, {}) }; m.updatedAt = new Date().toISOString(); await GC.db.put('members', m); UI.toast('Consent withdrawn', 'ok'); return V.member(el, id);
+      }
+      if (e.target.closest('[data-act="erase"]')) {
+        if (!await UI.confirm({ title: 'Erase personal details?', message: `This clears the mobile number, WhatsApp number, email, address, photo, introduction, family contact and remarks of <b>${esc(GC.nameH(m))}</b>. The name, dates and groups stay so that the record is not lost. <b>This cannot be undone</b> (restore a backup if needed). To remove the person completely use Delete.`, okLabel: 'Erase details', danger: true })) return;
+        Object.assign(m, { mobile: '', whatsapp: '', email: '', address: '', photo: '', intro: '', familyName: '', familyContact: '', bio: '', remarks: '', showPhone: false, updatedAt: new Date().toISOString() }); await GC.db.put('members', m); UI.toast('Personal details erased', 'ok'); return V.member(el, id);
+      }
       if (e.target.closest('[data-act="del"]')) { if (await deleteMember(m)) location.hash = m.status === 'deceased' ? '#/memory' : '#/members'; return; }
       await common(e);
     };
@@ -1732,6 +1767,14 @@ main{padding-bottom:6px!important}
           <label class="span2">Brief biography / remembrance note<textarea class="inp" id="f-bio" rows="3">${esc(m.bio)}</textarea></label>
           <label class="chk span2"><input type="checkbox" id="f-showphone" ${m.showPhone ? 'checked' : ''}> The family has authorised showing this member's mobile number in the app. <span class="muted">(Otherwise it stays hidden. A deceased member's number may no longer be active.)</span></label>
         </div></div>
+      <fieldset class="consent-box"><legend>🤝 Consent to use these details for greetings &amp; reminders</legend>
+        <p class="small muted">Record whether this person (or, for a remembered member, the family) agreed. “Not recorded” means nothing has been noted yet – it is <b>not</b> treated as consent. Belonging to a WhatsApp group is not consent.</p>
+        <div class="fgrid2">
+          <label>Consent status<select class="inp" id="f-cs">${Object.entries(GC.CONSENT).map(([k, v]) => `<option value="${k}" ${GC.consentOf(m) === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label>Date of consent<input class="inp" type="date" id="f-cd" value="${esc((m.consent && m.consent.date) || '')}"></label>
+          <label>Method<select class="inp" id="f-cm"><option value="">—</option>${GC.CONSENT_METHOD.map(x => `<option ${m.consent && m.consent.method === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+          <label>Consent remarks<input class="inp" id="f-cr" maxlength="200" value="${esc((m.consent && m.consent.remarks) || '')}"></label>
+        </div></fieldset>
       <label>Additional remarks<textarea class="inp" id="f-remarks" rows="2">${esc(m.remarks)}</textarea></label>
       <div id="f-errs"></div>
       <div class="btn-row"><button class="btn primary" type="submit">💾 Save member</button><a class="btn ghost" href="#/${isNew ? 'members' : 'member/' + m.id}">Cancel</a></div>
@@ -1766,6 +1809,7 @@ main{padding-bottom:6px!important}
       n.email = $('#f-email').value.trim(); n.profession = $('#f-prof').value.trim(); n.address = $('#f-addr').value.trim();
       n.groups = Array.from(el.querySelectorAll('#gchips input:checked')).map(i => i.value);
       n.intro = $('#f-intro').value.trim(); n.remarks = $('#f-remarks').value.trim(); n.photo = photo;
+      { const cs = $('#f-cs').value; n.consent = { status: cs, date: cs ? ($('#f-cd').value || C.today) : '', method: $('#f-cm').value, remarks: $('#f-cr').value.trim() }; }
       if (n.status === 'deceased') {
         n.dod = $('#f-dod').value; n.familyName = $('#f-fname').value.trim(); n.bio = $('#f-bio').value.trim();
         const fp = GC.normPhone($('#f-fnum').value, S.defaultCC); n.familyContact = fp.ok ? fp.value : $('#f-fnum').value.trim(); n.showPhone = $('#f-showphone').checked;
@@ -1842,10 +1886,11 @@ main{padding-bottom:6px!important}
         <div class="btn-row small">${Object.keys(GC.OV).length ? `<span class="muted">${Object.keys(GC.OV).length} template(s) edited by you.</span> <button class="btn xs danger-o" data-resetall>Reset all my edits</button>` : '<span class="muted">Tap ✏️ Edit on any message to change its wording. Your version is used from then on, and you can reset it any time.</span>'}</div>
         <div id="ml-list">${list.map((t, i) => `<div class="tpl"><pre>${esc(GC.render(t, ctx))}</pre>${GC.OV[base.prefix + i] != null ? '<span class="tag demo">edited</span>' : ''}<div class="btn-row"><button class="btn sm" data-copy="${i}">📋 Copy</button><button class="btn sm" data-edit="${i}">✏️ Edit</button><button class="btn sm ghost" data-fav="${i}">☆ Save to favourites</button></div></div>`).join('')}</div></div>
       <div class="card"><h2>⭐ My favourite &amp; personal messages</h2>
-        ${favs.length ? favs.map(f => `<div class="tpl"><div class="small muted">${esc(GC.OCC[f.occasion] ? GC.OCC[f.occasion].label : f.occasion)} · ${f.audience === 'group' ? 'group' : 'personal'} · ${f.kind === 'custom' ? 'written by you' : 'favourite'}</div><pre>${esc(f.text)}</pre><div class="btn-row"><button class="btn sm danger-o" data-delfav="${f.id}">🗑 Remove</button></div></div>`).join('') : '<p class="muted">Nothing saved yet. Save any message you like from here or from the send panel.</p>'}
+        ${favs.length ? favs.map(f => `<div class="tpl"><div class="small muted">${esc(GC.OCC[f.occasion] ? GC.OCC[f.occasion].label : f.occasion)} · ${f.audience === 'group' ? 'group' : 'personal'} · ${f.kind === 'custom' ? 'written by you' : 'favourite'}${f.cat ? ' · <span class="chip">' + esc(GC.customCatLabel(f.cat)) + '</span>' : ''}</div><pre>${esc(f.text)}</pre><details class="small"><summary>👁 Preview with a sample member</summary><pre>${esc(GC.render(f.text, GC.makeContext(f.occasion === 'birthday' ? sample : dec, { years: 60 }, C.S)))}</pre></details><div class="btn-row"><button class="btn sm" data-editc="${f.id}">✏️ Edit</button><button class="btn sm danger-o" data-delfav="${f.id}">🗑 Delete</button></div></div>`).join('') : '<p class="muted">Nothing saved yet. Save any message you like from here or from the send panel.</p>'}
         <h3>Write your own message</h3>
         <div class="fgrid"><label>Occasion<select id="nm-occ" class="inp"><option value="birthday">Birthday</option><option value="birth_anniv">Birth anniversary</option><option value="death_anniv">Death anniversary</option></select></label>
-        <label>For<select id="nm-aud" class="inp"><option value="group">WhatsApp group (posted by admin)</option><option value="personal">Personal (birthdays of living members only)</option></select></label></div><p class="small muted">Remembrance messages (birth &amp; death anniversaries) are always posted in the group by the admin – never sent individually.</p>
+        <label>For<select id="nm-aud" class="inp"><option value="group">WhatsApp group (posted by admin)</option><option value="personal">Personal (birthdays of living members only)</option></select></label>
+        <label>Suits<select id="nm-cat" class="inp">${GC.CUSTOM_CATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label></div><p class="small muted">Remembrance messages (birth &amp; death anniversaries) are always posted in the group by the admin – never sent individually.</p>
         <textarea id="nm-text" class="inp" rows="5" placeholder="Write your message. You may use {nameH} (Mr. Rajesh Kumar), {first}, {full}, {his}/{him}, {contact} (mobile line), {greet}, {sign}."></textarea>
         <div class="btn-row"><button class="btn primary" id="nm-save">💾 Save my message</button></div>
         <h3>Paste or upload many messages</h3>
@@ -1868,6 +1913,7 @@ main{padding-bottom:6px!important}
       else if (t.id === 'ml-cat') { ML.cat = t.value; V.messages(el); } else if (t.id === 'ml-tone') { ML.tone = t.value; V.messages(el); }
     };
     el.onclick = async e => {
+      const ec = e.target.closest('[data-editc]'); if (ec) { const rec = favs.find(x => x.id === ec.dataset.editc); if (rec) openCustomEditor(rec, el); return; }
       const c = e.target.closest('[data-copy]'), f = e.target.closest('[data-fav]'), d = e.target.closest('[data-delfav]');
       const ed = e.target.closest('[data-edit]');
       if (ed) { const i = +ed.dataset.edit; return openEditor(base.prefix + i, base.list[i], list[i], mem, el); }
@@ -1881,17 +1927,37 @@ main{padding-bottom:6px!important}
         if (parts.length > 200) return UI.toast('Please add at most 200 messages at a time', 'err');
         if (parts.some(s => s.length > 3000)) return UI.toast('One message is longer than 3000 characters', 'err');
         const occ = el.querySelector('#nm-occ').value, aud = occ === 'birthday' ? el.querySelector('#nm-aud').value : 'group', now = new Date().toISOString();
-        await GC.db.putMany('customMessages', parts.map(t => ({ id: GC.uid(), kind: 'custom', occasion: occ, audience: aud, text: t, createdAt: now })));
+        await GC.db.putMany('customMessages', parts.map(t => ({ id: GC.uid(), kind: 'custom', occasion: occ, audience: aud, cat: el.querySelector('#nm-cat').value, text: t, createdAt: now })));
         UI.toast(parts.length + ' message' + (parts.length === 1 ? '' : 's') + ' saved', 'ok'); V.messages(el); return;
       }
       if (e.target.id === 'nm-save') {
         const t = el.querySelector('#nm-text').value.trim(); if (!t) return UI.toast('Please write a message first', 'err');
-        await GC.db.put('customMessages', { id: GC.uid(), kind: 'custom', occasion: el.querySelector('#nm-occ').value, audience: el.querySelector('#nm-occ').value === 'birthday' ? el.querySelector('#nm-aud').value : 'group', text: t, createdAt: new Date().toISOString() });
+        await GC.db.put('customMessages', { id: GC.uid(), kind: 'custom', occasion: el.querySelector('#nm-occ').value, audience: el.querySelector('#nm-occ').value === 'birthday' ? el.querySelector('#nm-aud').value : 'group', cat: el.querySelector('#nm-cat').value, text: t, createdAt: new Date().toISOString() });
         UI.toast('Message saved', 'ok'); V.messages(el);
       }
     };
   };
 
+
+  /* ---- editor for the user's own saved greetings ---- */
+  function openCustomEditor(rec, el) {
+    const smp = Object.assign(GC.blankMember(), { name: 'Rajesh Kumar', gender: 'M', mobile: '+919810000000', dob: '1965-08-15', dod: '2021-06-12' });
+    const ctx = GC.makeContext(rec.occasion === 'birthday' ? smp : Object.assign({}, smp, { status: 'deceased' }), { years: 60 }, C.S);
+    const api = UI.modal({
+      title: '✏️ Edit my greeting', wide: true, sticky: true, noFocus: true,
+      body: `<div class="fgrid"><label>Suits<select id="ec-cat" class="inp">${GC.CUSTOM_CATS.map(([k, l]) => `<option value="${k}" ${(rec.cat || '') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label>For<select id="ec-aud" class="inp" ${rec.occasion !== 'birthday' ? 'disabled' : ''}><option value="group" ${rec.audience === 'group' ? 'selected' : ''}>WhatsApp group</option><option value="personal" ${rec.audience === 'personal' ? 'selected' : ''}>Personal</option></select></label></div>
+        <div class="gchips" id="ed-ph">${PH.map(([t, d]) => `<button type="button" class="gchip" data-ins="${esc(t)}" title="${esc(d)}">${esc(t)}</button>`).join('')}</div>
+        <textarea id="ed-t" class="inp msg" rows="9">${esc(rec.text)}</textarea><div class="tpl"><div class="small muted">Preview (sample member)</div><pre id="ed-p"></pre></div>`,
+      buttons: [{ label: 'Cancel', cls: 'ghost' }, { label: '💾 Save', cls: 'primary', action: async a => {
+        const t = a.el.querySelector('#ed-t').value.trim(); if (!t) { UI.toast('The message cannot be empty', 'err'); return false; }
+        rec.text = t; rec.cat = a.el.querySelector('#ec-cat').value; rec.audience = rec.occasion === 'birthday' ? a.el.querySelector('#ec-aud').value : 'group'; rec.updatedAt = new Date().toISOString();
+        await GC.db.put('customMessages', rec); UI.toast('Greeting updated', 'ok'); V.messages(el);
+      } }]
+    });
+    const t = api.el.querySelector('#ed-t'), p = api.el.querySelector('#ed-p'); const prev = () => { p.textContent = GC.render(t.value, ctx); }; t.addEventListener('input', prev); prev();
+    api.el.querySelector('#ed-ph').addEventListener('click', e => { const b = e.target.closest('[data-ins]'); if (!b) return; const s = t.selectionStart, en = t.selectionEnd; t.value = t.value.slice(0, s) + b.dataset.ins + t.value.slice(en); t.focus(); t.selectionStart = t.selectionEnd = s + b.dataset.ins.length; prev(); });
+  }
 
   /* ---- template editor ---- */
   const PH = [['{nameH}', 'Title + name (Mr. Rajesh Kumar)'], ['{first}', 'First name'], ['{full}', 'Full name'], ['{contact}', 'Mobile-contact lines (living members)'], ['{greet}', 'Good morning/afternoon/evening'], ['{he}', 'he / she / they'], ['{him}', 'him / her / them'], ['{his}', 'his / her / their'], ['{ageLine}', 'Age line (if birth year known)'], ['{birthPhrase}', '75th birth anniversary'], ['{annivPhrase}', '3rd death anniversary'], ['{sign}', 'Your name (from Settings)']];
@@ -1929,11 +1995,22 @@ main{padding-bottom:6px!important}
     const awaiting = todayOcc.filter(o => { const g = UI.bestLog(logs, o, 'group'); return !g || !['confirmed', 'skipped'].includes(g.status); });
     const perm = 'Notification' in root ? Notification.permission : 'unsupported';
     const KL = { today: 'Today', advance: '1 day before', advance3: '3 days before', weekly: 'Weekly summary' }; const kl = k => KL[k] || (/^advance(\d+)$/.test(k) ? RegExp.$1 + ' days before' : k);
+    const np = GC.nowParts(S.tz), [rh, rm] = (S.reminderTime || '05:00').split(':').map(Number), pastTime = np.hour * 60 + np.minute >= rh * 60 + rm;
+    const nextTxt = !S.notifEnabled ? 'Not scheduled – reminders are switched off.' : pastTime ? `While the app is open it checks every minute. The first check tomorrow is at ${S.reminderTime} ${S.tz === 'Asia/Kolkata' ? 'IST' : S.tz}, when the app is opened.` : `Today at ${S.reminderTime} ${S.tz === 'Asia/Kolkata' ? 'IST' : S.tz} (if the app is open or opened after that time).`;
+    const warn = perm === 'unsupported' ? 'This browser cannot show notifications. Reminders will still appear inside the app (Home screen).' : perm === 'denied' ? 'Notifications are <b>blocked</b> for this app. Allow them in your phone or browser settings (iPhone: Settings → Notifications → Group Connect; Android: long-press the app icon → Notifications). Until then reminders appear only inside the app.' : perm === 'default' ? 'Notification permission has <b>not been given yet</b>. Tap “Enable reminders”.' : (!S.notifEnabled ? 'Permission is granted but reminders are switched off. Tap “Enable reminders”.' : '');
     el.innerHTML = `<div class="page-head"><h1>🔔 Reminders</h1></div>
+      ${warn ? `<div class="card note">⚠ ${warn}</div>` : ''}
+      <div class="card"><h2>Reminder checks</h2>
+        <div class="kv"><span>Notifications</span><div>${S.notifEnabled && perm === 'granted' ? '✅ Enabled' : '⚪ Disabled'} · permission: <b>${esc(perm)}</b></div></div>
+        <div class="kv"><span>Last successful check</span><div>${S.lastReminderCheck ? esc(UI.fmtDT(S.lastReminderCheck, S.tz)) : 'Not checked yet'}</div></div>
+        <div class="kv"><span>Next check</span><div>${esc(nextTxt)}</div></div>
+        <div class="kv"><span>Time zone</span><div>${esc(S.tz)}</div></div>
+        <div class="btn-row"><button class="btn primary" data-act="runnow">🔄 Check reminders now</button><button class="btn" data-act="test">🔔 Test notification</button></div>
+        <details class="faq-a"><summary><b>Why can't the app remind me when it is closed?</b></summary><p class="small">A web app can only run while it is open (or recently open). Phones may stop it in the background, and this version has no background service. To get a notification at an exact time while the app is closed, a separate <b>push server</b> would be needed – with some cost, an account, and sending (encrypted) notification data through Apple/Google. That is <b>not</b> part of this app; it can be proposed separately if you want it. For now, open the app each morning – it checks at once.</p></details></div>
       <div class="card"><h2>Notification status</h2>
         <p>${S.notifEnabled && perm === 'granted' ? '✅ Reminders are <b>on</b>.' : '⚪ Reminders are <b>off</b>.'} Browser permission: <b>${esc(perm)}</b>. Daily time: <b>${esc(S.reminderTime)}</b> (${esc(S.tz)}).</p>
         <div class="btn-row">${perm === 'unsupported' ? '' : `<button class="btn primary" data-act="enable">${S.notifEnabled ? 'Re-check permission' : '🔔 Enable reminders'}</button>`}
-          <button class="btn" data-act="test">Send test notification</button><button class="btn" data-act="runnow">Check now</button><a class="btn ghost" href="#/settings">⚙️ Change times &amp; options</a></div>
+          <a class="btn ghost" href="#/settings">⚙️ Change times &amp; options</a></div>
         <p class="hint"><b>iPhone / iPad:</b> notifications work only for the app added to the Home Screen (Share → Add to Home Screen, then open it from there and tap Enable), on iOS 16.4 or later – and they are shown when the app is open or recently used. <b>Everyone:</b> web apps cannot be woken at an exact time while fully closed. Reminders fire when the app is opened or running in the background${GC.BG_SYNC ? ', and on Android Chrome (installed app) may also run through periodic background sync, which the browser decides on and cannot be guaranteed' : '. This version does not use background sync, so please open the app each morning (it checks as soon as it opens)'}. Each member/occasion/day is notified only once. Install the app to your home screen for best results.</p></div>
       <div class="card"><h2>⏳ Awaiting action today</h2>${awaiting.length ? occHTML(awaiting, { noWhen: true }) : empty('✨', todayOcc.length ? 'All of today’s occasions have been handled.' : 'Nothing today.')}</div>
       <div class="card"><h2>🕘 Reminder history</h2>${hist.length ? `<table class="tbl"><tr><th>Notified</th><th>Type</th><th>Occasion</th></tr>${hist.map(h => `<tr><td><small>${esc(UI.fmtDT(h.notifiedAt, S.tz))}</small></td><td>${esc(kl(h.kind) || h.kind)}</td><td>${esc(h.name || '')}${h.type !== 'weekly' ? `<br><small class="muted">${esc(GC.OCC[h.type] ? GC.OCC[h.type].label : h.type)} · ${esc(GC.fmtDate(h.occDate))}</small>` : ''}</td></tr>`).join('')}</table>` : '<p class="muted">No reminders have been sent yet. Processed occasions will appear here so nothing is notified twice.</p>'}
@@ -2008,7 +2085,11 @@ main{padding-bottom:6px!important}
   function importSummary(el) {
     const rows = IMP.rows; const err = rows.filter(r => r.res.errors.length).length, dup = rows.filter(r => r.dup).length;
     const ok = rows.filter(r => r.inc && !r.res.errors.length && !(r.dup && IMP.mode === 'skip')).length;
-    el.querySelector('#imp-sum').innerHTML = `<b>${rows.length}</b> rows read · <span class="${err ? 'bad' : ''}">${err} with errors</span> · <span class="${dup ? 'warnc' : ''}">${dup} duplicate mobile</span> · <b>${ok}</b> ready to import`;
+    const dupDb = rows.filter(r => r.dup && r.dup.where === 'database' && r.inc && !r.res.errors.length), mode = IMP.mode;
+    const newN = rows.filter(r => r.inc && !r.res.errors.length && !r.dup).length + (mode === 'add' ? rows.filter(r => r.inc && !r.res.errors.length && r.dup).length : 0);
+    const updN = mode === 'update' ? dupDb.length : 0;
+    const skipN = rows.length - newN - updN - err;
+    el.querySelector('#imp-sum').innerHTML = `<b>${rows.length}</b> rows read → <span class="ok">🆕 ${newN} new</span> · <span>✏️ ${updN} to update</span> · <span class="${dup ? 'warnc' : ''}">⚠ ${dup} duplicate mobile</span> · <span class="${err ? 'bad' : ''}">✖ ${err} invalid</span> · <span>⏭ ${Math.max(0, skipN)} will be skipped</span>`;
     el.querySelector('#imp-go').textContent = `Import ${ok} member${ok === 1 ? '' : 's'}`; el.querySelector('#imp-go').disabled = ok === 0;
   }
   async function startImport(el, file) {
@@ -2048,7 +2129,7 @@ main{padding-bottom:6px!important}
     box.querySelector('#imp-all').onclick = () => box.querySelectorAll('tbody tr').forEach(t => t.hidden = false);
     box.querySelector('#imp-cancel').onclick = () => { IMP = null; box.innerHTML = ''; };
     box.querySelector('#imp-go').onclick = async () => {
-      let added = 0, updated = 0, skipped = 0; const toPut = []; const byId = new Map(C.members.map(m => [m.id, m]));
+      const IMProws = IMP.rows; let added = 0, updated = 0, skipped = 0; const toPut = []; const byId = new Map(C.members.map(m => [m.id, m]));
       const sg = new Set(C.S.groups || []);
       for (const r of IMP.rows) {
         if (!r.inc || r.res.errors.length) { skipped++; continue; }
@@ -2065,7 +2146,8 @@ main{padding-bottom:6px!important}
       }
       await GC.db.putMany('members', toPut); await GC.setSetting('groups', [...sg]);
       IMP = null; box.innerHTML = '';
-      await UI.alert('Import complete', `✅ <b>${added}</b> added · <b>${updated}</b> updated · <b>${skipped}</b> skipped.`);
+      const invalidN = IMProws.filter(r => r.res.errors.length).length, dupN = IMProws.filter(r => r.dup).length;
+      await UI.alert('Import complete', `✅ <b>${added}</b> new · ✏️ <b>${updated}</b> updated · ⚠ <b>${dupN}</b> duplicate mobile numbers found · ✖ <b>${invalidN}</b> invalid · ⏭ <b>${skipped}</b> skipped in total.<br><span class="small muted">Nothing was deleted or silently overwritten. Rows with errors were left out – you can correct them and import again.</span>`);
       V.data(el);
     };
   }
@@ -2126,6 +2208,8 @@ main{padding-bottom:6px!important}
       <section class="card"><h2>📤 Export</h2><p class="small muted">Includes everyone – living and deceased. Excel format keeps phone numbers intact.</p>
         <div class="btn-row"><button class="btn" data-act="exp-xlsx">Excel (.xlsx)</button><button class="btn" data-act="exp-csv">CSV</button><button class="btn" data-act="exp-json">JSON (complete data)</button></div></section>
       <section class="card"><h2>🔐 Backup &amp; restore</h2><p class="small muted">A backup contains <b>all</b> members (with photos), message history, reminder history, saved messages and settings. The PIN is not included. Keep backup files private.</p>
+        <p id="bk-last">${C.S.lastBackupAt ? '✅ Last backup: <b>' + esc(UI.fmtDT(C.S.lastBackupAt, C.S.tz)) + '</b>' + (Math.floor((Date.now() - new Date(C.S.lastBackupAt)) / 864e5) > 30 ? ' <span class="warnc">– more than 30 days ago</span>' : '') : '⚠ <b>No backup has been taken yet on this device.</b>'}</p>
+        <p class="small muted">Save the encrypted backup in a safe place (for example your email to yourself, Google Drive or iCloud). Phones can lose browser data – a backup is your protection. Take one before every app update.</p>
         <div class="btn-row"><button class="btn primary" data-act="bk-enc">🔒 Encrypted backup</button><button class="btn" data-act="bk-plain">Unencrypted backup (.json)</button>
           <label class="btn">♻ Restore from backup<input type="file" id="rs-file" accept=".json,.gcbackup,application/json" hidden></label></div></section>
       <section class="card"><h2>🔎 Data quality check</h2><p class="small muted">Finds duplicate mobile numbers and missing or invalid dates.</p><div class="btn-row"><button class="btn" data-act="dq">Run check</button></div><div id="dq"></div></section>
@@ -2144,7 +2228,7 @@ main{padding-bottom:6px!important}
         const probs = await checkBackup(obj); if (probs.length) throw new Error(probs.join(' '));
         const mode = await new Promise(res => UI.modal({
           title: 'Restore backup', sticky: true,
-          body: `<p>Backup from <b>${esc(UI.fmtDT(obj.exportedAt))}</b> (file version ${obj.version || 1}) with <b>${obj.data.members.length}</b> members. ${obj.checksum ? '✅ Integrity check passed.' : '<span class="muted">Older backup – no integrity code to check.</span>'}</p><p><b>Replace</b> erases the current data on this device first. <b>Merge</b> adds the backup's records and overwrites records with the same ID.</p>`,
+          body: `<p>Backup from <b>${esc(UI.fmtDT(obj.exportedAt))}</b> (file version ${obj.version || 1}${obj.appVersion ? ', app ' + esc(obj.appVersion) : ''}) with <b>${obj.data.members.length}</b> members, <b>${(obj.data.messageLog || []).length}</b> message records, <b>${(obj.data.reminderHistory || []).length}</b> reminder records and <b>${(obj.data.customMessages || []).length}</b> saved messages. ${obj.checksum ? '✅ Integrity check passed.' : '<span class="muted">Older backup – no integrity code to check.</span>'}</p><p><b>Replace</b> erases the current data on this device first. <b>Merge</b> adds the backup's records and overwrites records with the same ID.</p>`,
           buttons: [{ label: 'Cancel', cls: 'ghost', value: null }, { label: 'Merge', value: 'merge' }, { label: 'Replace everything', cls: 'danger', value: 'replace' }], onClose: r => res(r || null)
         }));
         if (!mode) return;
@@ -2163,11 +2247,11 @@ main{padding-bottom:6px!important}
       else if (a === 'exp-csv') GC.download(`GroupConnect-members-${stamp()}.csv`, GC.toCSV(GC.exportRows(members)), 'text/csv');
       else if (a === 'exp-json') GC.download(`GroupConnect-data-${stamp()}.json`, JSON.stringify(await buildBackup(), null, 1), 'application/json');
       else if (a === 'bk-plain') {
-        if (await UI.confirm({ title: 'Unencrypted backup', message: 'This file will contain personal details in readable form. Store it safely. Continue?', okLabel: 'Download' })) GC.download(`GroupConnect-backup-${stamp()}.json`, JSON.stringify(await buildBackup()), 'application/json');
+        if (await UI.confirm({ title: 'Unencrypted backup', message: 'This file will contain personal details in readable form. Store it safely. Continue?', okLabel: 'Download' })) { GC.download(`GroupConnect-backup-${stamp()}.json`, JSON.stringify(await buildBackup()), 'application/json'); await GC.setSetting('lastBackupAt', new Date().toISOString()); V.data(el); }
       } else if (a === 'bk-enc') {
         const pw = await UI.askText({ title: 'Choose a backup password', message: 'You will need this password to restore. <b>It cannot be recovered if forgotten.</b>', type: 'password', confirm: true, okLabel: 'Create backup', validate: v => v.length < 6 ? 'Use at least 6 characters' : '' });
         if (!pw) return;
-        try { GC.download(`GroupConnect-backup-${stamp()}.gcbackup`, await GC.encryptText(JSON.stringify(await buildBackup()), pw), 'application/json'); UI.toast('Encrypted backup downloaded', 'ok'); } catch (err) { UI.alert('Could not encrypt', esc(err.message)); }
+        try { GC.download(`GroupConnect-backup-${stamp()}.gcbackup`, await GC.encryptText(JSON.stringify(await buildBackup()), pw), 'application/json'); UI.toast('Encrypted backup downloaded', 'ok'); await GC.setSetting('lastBackupAt', new Date().toISOString()); V.data(el); } catch (err) { UI.alert('Could not encrypt', esc(err.message)); }
       } else if (a === 'dq') {
         const S = C.S, out = el.querySelector('#dq'); const byMob = {};
         members.forEach(m => { if (m.mobile) (byMob[m.mobile] = byMob[m.mobile] || []).push(m); });
@@ -2212,6 +2296,19 @@ main{padding-bottom:6px!important}
       <section class="card"><h2>👥 WhatsApp groups</h2><div id="glist">${C.groups.length ? C.groups.map(g => `<div class="grow"><span>👥 ${esc(g)} <small class="muted">(${C.members.filter(m => (m.groups || []).includes(g)).length} members)</small></span><span><button class="btn xs" data-act="g-ren" data-g="${esc(g)}">Rename</button><button class="btn xs danger-o" data-act="g-del" data-g="${esc(g)}">Delete</button></span></div>`).join('') : '<p class="muted">No groups yet. Add groups while adding members.</p>'}</div>
         <div class="row2"><input class="inp" id="g-new" placeholder="New group name"><button class="btn" data-act="g-add">Add group</button></div></section>
       <section class="card"><h2>🤖 Automatic sending (future)</h2><p class="small">Group Connect is built so that the official <b>Meta WhatsApp Business Platform</b> can be plugged in later for scheduled individual messages using approved templates and recipients who have opted in. Until then, nothing is ever sent automatically: the app prepares messages and opens WhatsApp, and you press Send. Unofficial automation (WhatsApp Web scraping, scripts) is deliberately not used, because it can get a number banned.</p></section>
+      <section class="card"><h2>🔠 Display &amp; backup reminder</h2>
+        <label>Text size<select id="s-font" class="inp"><option value="normal" ${S.fontScale === 'normal' ? 'selected' : ''}>Normal</option><option value="large" ${S.fontScale === 'large' ? 'selected' : ''}>Large</option><option value="xlarge" ${S.fontScale === 'xlarge' ? 'selected' : ''}>Extra large</option></select></label>
+        <label class="chk"><input type="checkbox" id="s-bkrem" ${S.backupRemind !== false ? 'checked' : ''}> Remind me monthly to take a backup (if none in the last 30 days)</label>
+        <label class="chk"><input type="checkbox" id="s-consent" ${S.consentRespect !== false ? 'checked' : ''}> Leave members who declined or withdrew consent out of reminders</label></section>
+      <section class="card"><h2>🛡 Privacy notice</h2>
+        <ul class="small">
+          <li><b>Your data stays on this device.</b> Members, photos, messages and settings are stored in this browser's local database (IndexedDB). Group Connect has no server, no account, no analytics and no tracking, and sends no member information anywhere.</li>
+          <li><b>The PIN is a screen lock, not encryption.</b> It stops casual access to the app, but the stored records are <b>not encrypted</b>: someone with full access to the unlocked phone or its browser data could still reach them. Use the <b>Encrypted backup</b> (AES-256) for files you store or share.</li>
+          <li><b>WhatsApp:</b> the app only prepares a message and opens WhatsApp. You press Send yourself. Messages go through WhatsApp, under its own terms.</li>
+          <li><b>Voice assistant:</b> the phone's browser may send your voice to Apple or Google to turn it into text (you are asked first).</li>
+          <li><b>Consent:</b> record consent for each member. “Not recorded” is not consent. If someone withdraws, use <i>Withdraw consent</i> on their profile; you can also <i>Erase personal details</i> or <i>Delete</i> the member.</li>
+          <li><b>Local database encryption is not included</b> in this version: a lost password would make all data unrecoverable, and a safe migration cannot be guaranteed on every phone. The Encrypted backup is the supported protection.</li></ul>
+        <div class="btn-row"><button class="btn" data-act="export-all">⬇ Export all my personal data</button></div></section>
       <section class="card danger-zone"><h2>🧨 Erase everything</h2><p class="small">Deletes all members, history and settings from this device. Download a backup first.</p><button class="btn danger" data-act="erase">Erase all data…</button></section>
       <p class="muted small center">Group Connect v${GC.VERSION} · Works offline · Data stays on this device</p>`;
     const val = id => el.querySelector(id).value;
@@ -2225,9 +2322,18 @@ main{padding-bottom:6px!important}
       if (wantNotif && 'Notification' in root && Notification.permission !== 'granted') await GC.enableNotifications();
       UI.toast('Settings saved', 'ok'); V.settings(el);
     };
+    el.querySelector('#s-font').onchange = async e => { await GC.setSetting('fontScale', e.target.value); GC.applyFont(e.target.value); UI.toast('Text size changed'); };
+    el.querySelector('#s-bkrem').onchange = async e => { await GC.setSetting('backupRemind', e.target.checked); UI.toast('Saved'); };
+    el.querySelector('#s-consent').onchange = async e => { await GC.setSetting('consentRespect', e.target.checked); UI.toast('Saved'); };
     el.querySelector('#s-lock').onchange = async e => { await GC.setSetting('autoLockMin', +e.target.value); UI.toast('Saved'); GC.resetIdle && GC.resetIdle(); };
     el.onclick = async e => {
       const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
+      if (a === 'export-all') {
+        if (!await UI.confirm({ title: 'Export all personal data', message: 'This downloads two readable files (a complete JSON file and an Excel-style CSV list) containing <b>all personal details</b>. Keep them private.', okLabel: 'Download both' })) return;
+        const members = await GC.db.all('members'); const all = await buildBackup();
+        GC.download(`GroupConnect-all-personal-data-${stamp()}.json`, JSON.stringify(all, null, 1), 'application/json');
+        GC.download(`GroupConnect-members-${stamp()}.csv`, GC.toCSV([GC.COLS.map(c => c[1]), ...members.map(GC.memberToRow)]), 'text/csv'); return;
+      }
       const pinCheck = async () => { const cur = await UI.askText({ title: 'Current PIN / password', type: 'password', okLabel: 'Continue' }); if (cur == null) return false; if (!(await GC.verifyPin(cur))) { UI.toast('Incorrect PIN', 'err'); return false; } return true; };
       const pinNew = async () => {
         const p = await UI.askText({ title: 'New PIN / password', message: 'Use at least 4 characters. Numbers are fine.', type: 'password', confirm: true, okLabel: 'Save', validate: v => v.length < 4 ? 'At least 4 characters' : '' });
@@ -2260,12 +2366,45 @@ main{padding-bottom:6px!important}
 (function (root) {
   'use strict';
   const GC = root.GC, UI = GC.ui, esc = UI.esc, V = GC.views;
-  const KINDS = [['summary', '📊 Summary'], ['groups', '👥 Group-wise members'], ['bmonth', '🎂 Month-wise birthdays'], ['rmonth', '🕯️ Month-wise remembrance dates'],
+  const KINDS = [['monthly', '🗓 Monthly Occasion Report'], ['consent', '🤝 Consent report'], ['summary', '📊 Summary'], ['groups', '👥 Group-wise members'], ['bmonth', '🎂 Month-wise birthdays'], ['rmonth', '🕯️ Month-wise remembrance dates'],
     ['upcoming', '⏳ Upcoming occasions (next 60 days)'], ['history', '🗒 Message history'], ['confirmed', '✅ Messages confirmed as sent'], ['pending', '⏱ Messages pending action']];
-  let kind = 'summary';
+  let kind = 'monthly';
+  const MR = { m: 0, y: 0, view: 'all', group: '', declined: false };
 
   /* Each builder returns { head:[...], rows:[[...]] } – plain text, escaped when drawn. */
   const B = {
+    monthly(c) {
+      if (!MR.m) { const p = GC.parseISO(c.today); MR.m = p.m; MR.y = p.y; }
+      const names = { birthday: 'Birthday', birth_anniv: 'Birth anniversary', death_anniv: 'Death anniversary' };
+      const items = [];
+      for (const m of c.members) {
+        const cs = GC.consentOf(m); if (cs === 'declined' && !MR.declined) continue;
+        const grp = (m.groups || []).length ? m.groups : ['(no group)'];
+        if (MR.group && !grp.includes(MR.group)) continue;
+        for (const o of GC.occasionsOf(m)) { if (o.m !== MR.m) continue; const d = GC.occInYear(o.m, o.d, MR.y);
+          const yrs = o.srcYear && MR.y - o.srcYear > 0 ? MR.y - o.srcYear : null;
+          items.push({ day: d.d, adj: d.adjusted, type: o.type, name: GC.nameH(m), yrs, grp, cs: GC.consentLabel(m) }); }
+      }
+      items.sort((a, b) => a.day - b.day || a.name.localeCompare(b.name));
+      const cnt = t => items.filter(i => i.type === t).length;
+      const dt = i => `${i.day} ${GC.MONTHS[MR.m - 1].slice(0, 3)} ${MR.y}${i.adj ? ' (observed; 29 Feb)' : ''}`;
+      const occ = i => names[i.type] + (i.yrs ? ` (${i.yrs})` : '');
+      let rows;
+      if (MR.view === 'group') {
+        rows = []; const gs = [...new Set(items.flatMap(i => i.grp))].sort();
+        for (const g of gs) for (const i of items.filter(x => x.grp.includes(g))) rows.push([g, dt(i), occ(i), i.name, i.cs]);
+        return { head: ['Group', 'Date', 'Occasion', 'Name', 'Consent'], rows, summary: `${GC.MONTHS[MR.m - 1]} ${MR.y} – ${cnt('birthday')} birthdays · ${cnt('birth_anniv')} birth anniversaries · ${cnt('death_anniv')} death anniversaries. A member in several groups is listed under each group.` };
+      }
+      rows = items.map(i => [dt(i), occ(i), i.name, i.grp.join(', '), i.cs]);
+      return { head: ['Date', 'Occasion', 'Name', 'WhatsApp group(s)', 'Consent'], rows, summary: `${GC.MONTHS[MR.m - 1]} ${MR.y} – ${cnt('birthday')} birthdays · ${cnt('birth_anniv')} birth anniversaries · ${cnt('death_anniv')} death anniversaries (${items.length} in all).` };
+    },
+    consent(c) {
+      const order = { pending: 0, declined: 1, '': 2, obtained: 3 };
+      const rows = c.members.slice().sort((a, b) => order[GC.consentOf(a)] - order[GC.consentOf(b)] || (a.name || '').localeCompare(b.name || ''))
+        .map(m => [GC.nameH(m), GC.consentLabel(m), (m.consent && m.consent.date) ? GC.fmtDate(m.consent.date) : '', (m.consent && m.consent.method) || '', (m.consent && m.consent.remarks) || '', (m.groups || []).join(', ')]);
+      const n = k => c.members.filter(m => GC.consentOf(m) === k).length;
+      return { head: ['Name', 'Consent', 'Date', 'Method', 'Remarks', 'Groups'], rows, summary: `Obtained ${n('obtained')} · Pending ${n('pending')} · Declined/withdrawn ${n('declined')} · Not recorded ${n('')}.` };
+    },
     summary(c) {
       const l = c.members.filter(m => m.status === 'living').length, d = c.members.length - l;
       const conf = c.logs.filter(r => r.status === 'confirmed').length;
@@ -2309,16 +2448,65 @@ main{padding-bottom:6px!important}
   V.reports = async el => {
     const S = await GC.getSettings();
     const c = { S, members: await GC.db.all('members'), logs: await GC.db.all('messageLog'), today: GC.nowParts(S.tz).date };
-    const rep = B[kind](c);
+    const rep = B[kind](c); if (kind === 'monthly') document.title = 'Group Connect – ' + GC.MONTHS[MR.m - 1] + ' ' + MR.y;
     el.innerHTML = `<div class="page-head"><h1>📈 Reports</h1></div>
       <div class="card noprint"><div class="fgrid"><label>Report<select id="rp-kind" class="inp">${KINDS.map(([k, l]) => `<option value="${k}" ${k === kind ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+        ${kind === 'monthly' ? `<div class="fgrid"><label>Month<select id="mr-m" class="inp">${GC.MONTHS.map((n, i) => `<option value="${i + 1}" ${MR.m === i + 1 ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label>Year<input id="mr-y" class="inp" type="number" min="1900" max="2200" value="${MR.y}"></label>
+          <label>View<select id="mr-v" class="inp"><option value="all" ${MR.view === 'all' ? 'selected' : ''}>Consolidated (all groups)</option><option value="group" ${MR.view === 'group' ? 'selected' : ''}>Group-wise</option></select></label>
+          <label>Group<select id="mr-g" class="inp"><option value="">All groups</option>${[...new Set([...(c.S.groups || []), ...c.members.flatMap(m => m.groups || [])])].sort().map(g => `<option ${MR.group === g ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select></label>
+          <label class="chk span2"><input type="checkbox" id="mr-d" ${MR.declined ? 'checked' : ''}> Include members who declined / withdrew consent</label></div>` : ''}
         <div class="btn-row"><button class="btn" id="rp-print">🖨 Print / save as PDF</button><button class="btn" id="rp-csv">⬇ Download CSV</button></div></div>
-      <div class="card"><h2>${esc(KINDS.find(k => k[0] === kind)[1])}</h2><p class="small muted">${esc(GC.fmtDate(c.today))} · ${rep.rows.length} row${rep.rows.length === 1 ? '' : 's'}${kind === 'groups' || kind === 'upcoming' ? '' : ''}</p>
+      <div class="card"><h2>${esc(KINDS.find(k => k[0] === kind)[1])}</h2><p class="small muted">${esc(GC.fmtDate(c.today))} · ${rep.rows.length} row${rep.rows.length === 1 ? '' : 's'}${kind === 'groups' || kind === 'upcoming' ? '' : ''}</p>${rep.summary ? `<p><b>${esc(rep.summary)}</b></p>` : ''}
         ${rep.rows.length ? `<div class="tblwrap"><table class="tbl"><tr>${rep.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${rep.rows.map(r => `<tr>${r.map(x => `<td>${esc(String(x))}</td>`).join('')}</tr>`).join('')}</table></div>` : '<p class="muted">Nothing to show for this report yet.</p>'}
         <p class="small muted">Mobile numbers of deceased members are never included in reports.</p></div>`;
     el.querySelector('#rp-kind').onchange = e => { kind = e.target.value; V.reports(el); };
+    if (kind === 'monthly') { const q = s => el.querySelector(s); q('#mr-m').onchange = e => { MR.m = +e.target.value; V.reports(el); }; q('#mr-y').onchange = e => { MR.y = Math.min(2200, Math.max(1900, +e.target.value || MR.y)); V.reports(el); }; q('#mr-v').onchange = e => { MR.view = e.target.value; V.reports(el); }; q('#mr-g').onchange = e => { MR.group = e.target.value; V.reports(el); }; q('#mr-d').onchange = e => { MR.declined = e.target.checked; V.reports(el); }; }
     el.querySelector('#rp-print').onclick = () => root.print();
-    el.querySelector('#rp-csv').onclick = () => GC.download(`GroupConnect-report-${kind}-${c.today}.csv`, GC.toCSV([rep.head, ...rep.rows.map(r => r.map(String))]), 'text/csv');
+    el.querySelector('#rp-csv').onclick = () => GC.download(`GroupConnect-report-${kind}${kind === 'monthly' ? '-' + MR.y + '-' + String(MR.m).padStart(2, '0') : ''}-${c.today}.csv`, GC.toCSV([rep.head, ...rep.rows.map(r => r.map(String))]), 'text/csv');
+  };
+})(typeof self !== 'undefined' ? self : this);
+
+/* ==== groups.js ==== */
+/* Group Connect – Groups: member counts, group-wise occasions, monthly summary, multi-group members, export. */
+(function (root) {
+  'use strict';
+  const GC = root.GC, UI = GC.ui, esc = UI.esc, V = GC.views;
+  let sel = '';   // '' = all groups (consolidated)
+  const TYPES = [['birthday', '🎂 Birthdays'], ['birth_anniv', '🕊️ Birth anniversaries'], ['death_anniv', '🕯️ Death anniversaries']];
+
+  V.groups = async el => {
+    const S = await GC.getSettings(), members = await GC.db.all('members'), today = GC.nowParts(S.tz).date;
+    const names = [...new Set([...(S.groups || []), ...members.flatMap(m => m.groups || [])])].sort();
+    if (sel && !names.includes(sel)) sel = '';
+    const inGroup = m => !sel || (m.groups || []).includes(sel);
+    const shown = members.filter(inGroup), excluded = shown.filter(m => GC.consentOf(m) === 'declined').length, use = shown.filter(m => GC.consentOf(m) !== 'declined');
+    const multi = members.filter(m => (m.groups || []).length > 1), none = members.filter(m => !(m.groups || []).length);
+    const ups = GC.upcoming(use, today, 90);
+    // possible duplicates: same name (ignoring case/spaces) and same date of birth, different record
+    const seen = new Map(), dups = [];
+    for (const m of members) { const k = (m.name || '').toLowerCase().replace(/\s+/g, ' ').trim() + '|' + (m.dob || ''); if (!m.name) continue; if (seen.has(k)) dups.push([seen.get(k), m]); else seen.set(k, m); }
+    // 12-month group summary (next 12 calendar months from this month, current year occasion dates)
+    const cy = GC.parseISO(today).y, monthRows = GC.MONTHS.map((mn, i) => { const c = { birthday: 0, birth_anniv: 0, death_anniv: 0 }; for (const m of use) for (const o of GC.occasionsOf(m)) if (o.m === i + 1) c[o.type]++; return [mn, c.birthday, c.birth_anniv, c.death_anniv]; });
+    el.innerHTML = `<div class="page-head"><h1>🗂 Groups</h1></div>
+      <div class="card"><h2>WhatsApp groups</h2>
+        ${names.length ? `<div class="tblwrap"><table class="tbl"><tr><th>Group</th><th>Members</th><th>Living</th><th>In memory</th></tr>${names.map(g => { const ms = members.filter(m => (m.groups || []).includes(g)); return `<tr><td><button class="btn sm ${g === sel ? 'primary' : ''}" data-g="${esc(g)}">${esc(g)}</button></td><td>${ms.length}</td><td>${ms.filter(m => m.status === 'living').length}</td><td>${ms.filter(m => m.status !== 'living').length}</td></tr>`; }).join('')}<tr><td><b>All groups (each person counted once)</b></td><td><b>${members.length}</b></td><td>${members.filter(m => m.status === 'living').length}</td><td>${members.filter(m => m.status !== 'living').length}</td></tr></table></div>` : '<p class="muted">No groups yet. Add members and tick their WhatsApp groups.</p>'}
+        <p class="small muted">${multi.length} member${multi.length === 1 ? ' belongs' : 's belong'} to more than one group – they are kept as <b>one record</b>, so editing once updates every group.${none.length ? ` ${none.length} member${none.length === 1 ? ' is' : 's are'} in no group.` : ''}</p>
+        ${multi.length ? `<details><summary class="small"><b>Members in several groups (${multi.length})</b></summary><ul class="small">${multi.map(m => `<li><a href="#/member/${m.id}">${esc(GC.nameH(m))}</a> – ${esc(m.groups.join(', '))}</li>`).join('')}</ul></details>` : ''}
+        ${dups.length ? `<div class="card note"><b>⚠ Possible duplicate records (${dups.length})</b><ul class="small">${dups.map(([a, b]) => `<li>${esc(a.name)} – <a href="#/member/${a.id}">record 1</a> and <a href="#/member/${b.id}">record 2</a> have the same name and date of birth. If they are one person, edit one record, tick all groups, and delete the other.</li>`).join('')}</ul></div>` : ''}</div>
+      <div class="card"><h2>Occasions: <span class="chip">${esc(sel || 'All groups (consolidated)')}</span></h2>
+        <div class="fgrid"><label>Choose a group<select id="g-sel" class="inp"><option value="">All groups (consolidated)</option>${names.map(g => `<option ${g === sel ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select></label></div>
+        <p class="small muted">${shown.length} member${shown.length === 1 ? '' : 's'}${excluded ? ` · ${excluded} left out because consent was declined` : ''}. Upcoming occasions in the next 90 days:</p>
+        ${TYPES.map(([t, label]) => { const l = ups.filter(o => o.type === t); return `<h3>${label} (${l.length})</h3>${l.length ? `<ul class="plain">${l.map(o => `<li><a href="#/member/${o.member.id}">${esc(GC.nameH(o.member))}</a> – ${esc(GC.fmtDate(o.date, { noYear: true }))}${o.inDays === 0 ? ' (today)' : o.inDays === 1 ? ' (tomorrow)' : ', in ' + o.inDays + ' days'}${t === 'birthday' && !sel && (o.member.groups || []).length ? ' · ' + esc(o.member.groups.join(', ')) : ''}</li>`).join('')}</ul>` : '<p class="small muted">None.</p>'}`; }).join('')}
+        <div class="btn-row"><button class="btn" id="g-csv">⬇ Download occasions (CSV)</button><a class="btn" href="#/reports">🗓 Monthly Occasion Report</a></div></div>
+      <div class="card"><h2>Month-wise summary: ${esc(sel || 'All groups')}</h2><div class="tblwrap"><table class="tbl"><tr><th>Month</th><th>Birthdays</th><th>Birth anniv.</th><th>Death anniv.</th></tr>${monthRows.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</table></div></div>`;
+    el.onclick = e => { const b = e.target.closest('[data-g]'); if (b) { sel = b.dataset.g; V.groups(el); } };
+    el.querySelector('#g-sel').onchange = e => { sel = e.target.value; V.groups(el); };
+    el.querySelector('#g-csv').onclick = () => {
+      const all = GC.upcoming(use, today, 365); const rows = [['Group', 'Date', 'Occasion', 'Name', 'Consent']];
+      for (const o of all) { const gs = sel ? [sel] : ((o.member.groups || []).length ? o.member.groups : ['(no group)']); for (const g of gs) rows.push([g, o.date, GC.OCC[o.type].label, GC.nameH(o.member), GC.consentLabel(o.member)]); }
+      GC.download(`GroupConnect-occasions-${(sel || 'all-groups').replace(/[^\w-]+/g, '_')}-${today}.csv`, GC.toCSV(rows), 'text/csv');
+    };
   };
 })(typeof self !== 'undefined' ? self : this);
 
@@ -2516,7 +2704,22 @@ main{padding-bottom:6px!important}
     ['auto', 'Why does it not send messages by itself?', 'automatic auto send schedule bot meta business api official ban',
       `<p>WhatsApp does not allow ordinary group messages to be sent automatically, and unofficial automation can get your number banned. So the app prepares everything and opens WhatsApp; you press Send. The design allows the official Meta WhatsApp Business Platform to be added later for individual messages with approved templates.</p>`],
     ['privacy', 'Where is my data? Is it safe?', 'privacy safe data stored where cloud upload security third party',
-      `<p>Everything is stored in this browser on this device. Nothing is uploaded; the app is blocked from contacting any outside server except when <i>you</i> tap a WhatsApp link. Keep encrypted backups and set a PIN.</p>`]
+      `<p>Everything is stored in this browser on this device. Nothing is uploaded; the app is blocked from contacting any outside server except when <i>you</i> tap a WhatsApp link. Keep encrypted backups and set a PIN.</p>`],
+    ['consent', 'Member consent', 'consent permission obtained pending declined withdraw erase privacy agree',
+      `<p>On a member's form or profile record whether the member agreed to receive wishes: <b>Obtained, Pending or Declined</b>, with the date, the method (written, WhatsApp, verbal, other) and remarks. Old records show <b>Not recorded</b> – the app never assumes consent.</p>
+       <p>Members who have <b>Declined</b> are left out of reminders. <b>Withdraw consent</b> keeps the record but marks it declined; <b>Erase details</b> or <b>Delete member</b> removes personal data. Use the filter on <b>Members</b> or the <b>Consent report</b> to see who is pending.</p>`],
+    ['groups', 'Groups', 'group groups wise count monthly summary consolidated csv export multiple whatsapp',
+      `<p>Open <b>Groups</b> from the menu (on a phone: <b>More → Groups</b>). Choose a group to see its member count, birthdays, anniversaries and upcoming occasions, or see all groups together.</p>
+       <p>A member can belong to several groups; they are stored once and counted in each group. You can export the group list as CSV and view a monthly summary for each group.</p>`],
+    ['monthly', 'Monthly occasion report', 'monthly report month year print csv excel occasions list totals',
+      `<p>Open <b>Reports</b>, pick the <b>month and year</b> and view all birthdays and remembrances – overall, group-wise or consolidated. Totals and consent status are shown. Use <b>Print</b> or download <b>CSV</b>. Members who declined consent are left out of the lists meant for sending.</p>`],
+    ['backupremind', 'Backup reminder', 'backup reminder monthly last 30 days warning restore verify save secure',
+      `<p>The Home page warns you when your last backup is more than <b>30 days</b> old; you can switch this reminder off in <b>Settings</b>. Go to <b>Data → Backup</b> to download a file. Restoring first checks the file's integrity and shows its details, and the app downloads a safety copy of your current data before replacing it.</p>
+       <p>Keep backups in a safe place such as your own cloud drive or a pen drive; they contain personal data. An encrypted backup needs its password – the app cannot recover it.</p>`],
+    ['textsize', 'Larger text', 'text size font larger bigger accessibility reading large',
+      `<p>In <b>Settings → Display</b> choose <b>Normal, Large or Extra large</b> text. The choice is saved on this device.</p>`],
+    ['mytemplates', 'My own greetings', 'own custom greeting template edit delete preview category senior retired friends younger professional',
+      `<p>In <b>Messages</b> write your own greeting, choose who it <b>Suits</b> (senior colleagues, retired colleagues, professional contacts, friends, younger members, family or other) and save. You can preview it with a sample member, edit or delete it later, and pick it from the list of saved messages when sharing.</p>`],
   ];
 
   /* best matching help topic for a spoken/typed question -> { title, text } (plain text, first sentences) */
@@ -2574,7 +2777,7 @@ main{padding-bottom:6px!important}
   const routes = {
     dashboard: el => V.dashboard(el), today: el => V.dashboard(el), members: el => V.members(el), memory: el => V.memory(el),
     member: (el, a) => V.member(el, a), add: (el, a, q) => V.form(el, null, q), edit: (el, a) => V.form(el, a),
-    calendar: el => V.calendar(el), messages: el => V.messages(el), reminders: el => V.reminders(el), reports: el => V.reports(el),
+    calendar: el => V.calendar(el), messages: el => V.messages(el), reminders: el => V.reminders(el), reports: el => V.reports(el), groups: el => V.groups(el),
     data: el => V.data(el), settings: el => V.settings(el), help: el => V.help(el)
   };
   GC.router = async function () {
@@ -2702,7 +2905,7 @@ main{padding-bottom:6px!important}
       main().innerHTML = `<div class="card"><h2>Storage unavailable</h2><p class="bad">${UI.esc(e.message)}</p><p>Group Connect keeps its data in your browser's local database (IndexedDB). Private/incognito windows or strict privacy settings can block it. Please open the app in a normal browser window.</p></div>`; return;
     }
     registerSW();
-    const S = await GC.getSettings();
+    const S = await GC.getSettings(); GC.applyFont(S.fontScale);
     bootDone = true;
     if (S.pinHash) GC.lock(); else start();
   }
