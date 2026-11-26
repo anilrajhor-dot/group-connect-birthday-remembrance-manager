@@ -193,6 +193,15 @@ input.inp[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearan
   #more-sheet a{display:flex;align-items:center;gap:10px;padding:14px 12px;min-height:52px;border:1px solid var(--line);border-radius:12px;color:var(--text);font-weight:600;font-size:1rem;background:var(--bg)}
   #more-sheet a.on{border-color:var(--pri);color:var(--pri)}#more-sheet a span{font-size:1.4rem}
   body.locked #more-sheet{display:none!important}}
+.credit{text-align:center;font-size:.8rem;color:var(--muted);padding:6px 14px calc(var(--nav-h) + 22px + env(safe-area-inset-bottom))}
+body.locked .credit{display:none}
+.credit-lock{margin-top:10px!important;font-size:.85rem}
+@media(min-width:900px){.credit{margin-left:210px;padding-bottom:20px}}
+main{padding-bottom:6px!important}
+.voice-card .big-mic{min-height:54px;font-size:1.1rem;flex:1 1 220px}
+.v-ans{margin-top:10px;padding:12px 14px;border:1px solid var(--line);border-left:4px solid var(--pri);border-radius:12px;background:var(--bg)}
+.v-a{font-size:1.1rem;line-height:1.5;margin:.3em 0 0}
+@media print{.credit{padding-bottom:0}}
 .faq{padding:0}.faq summary{padding:14px 16px;cursor:pointer;list-style:none}.faq summary::-webkit-details-marker{display:none}.faq summary::before{content:'▸ ';color:var(--pri)}.faq[open] summary::before{content:'▾ '}.faq-a{padding:0 16px 14px;font-size:.95rem}.faq-a ol,.faq-a ul{padding-left:20px}code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:.88em}
 
 </style>
@@ -204,6 +213,7 @@ input.inp[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearan
     <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAAfUUlEQVR4Xu1dCZQcxXmuqj5mZs/R7uoGSQhpgZUEGHBi2UIQg7F5yGAbIQTE9nt+wXEgTmxjY+c5ApyXZ8A4tuERIE7sxLHDZQwGIUAcMrLEJdAtIa20K61OtDr2mN2dq7ur8v6q7p6e0czuzPbsjrRd3xPs9k5PdXf11///1/f/VY2vveogcoEZy2wwhGGD/4X/j28i5OwDm/bu8AN7vooQy9qEppyP7aYyzdotew7tfNfexz6uc2jPJj+QfVb2D89ZiTPMnFZRzXrbyVwgP3/PBY5QR5WtWeZ0i3PLsjvNuR3OFfnoKJIhjLeDvMyQ7Cknezz9fdJjVr6n13sU2xCIh188ruV4enlzGKnOobyclbZnhGyPp9kc9pTN9oy27RcEkuyRnisThAwaOeR2lJodu5yGtqcMBnkU2FPYc5XT9oyK58oOZ9Xy+V1vED2KUXO2uzklo+ax5bmcwFz8zMRAcsyVGUaUM2ouPDgtm+0ZvTFX1piXmyI7Bjr92CM9lzv8qYTncvtfHekRe2b0OLjek/uk5rrzHBnp5GYzXyhK73EMcbaMdLLtyZI5BhHG8shRg5m0k5v1DrPtkY346U9vK7b/s0f7XNjLUNRzJU686FydWhbbgzHCmCEiOpgx8Z997sWpVRnkGuSTRUh+PcU1m1+ELDZqzuq4wWVVD12KIWXmeRgVtZbfIIzBadp8ZIgK3amkMZcgtDfuBBeW2S5Ba4bbTAicFqXMNGnaZKYJxCEEKQpSNYy9IiUWxHKAbQJkzt65p/ABFufB+GMhIgX+O8Jw9rDNfxcjzwyVeOfAp07rzk+bcPBp5omE2+xhCN/MMmPerXwH8vDY01QpzYoTzu5/fkoZ2+OcoW0SnE/4plcb50+d1zpAR2WUQ0qRYZomZRZlGCNVxbpKdJUIi0sz151je1y65GYj7BuJ7VGYzawiLSfQWUGWheJxahhMD+HGRmXKFH36NH3qFHX8eLW+XqmpVjTNpYvHvpQADxUyzMsWzItt2cMMh5s5X82OJAZBblODIzdA8QNgjHvWXn3ZY/0KwLRoLG729KePdCc7Ogf2dg50dA4c6U6mTEtTSSSkqARTxplUnOcSpgghNwYqzvYQAl9Lpmiyj9XUkHlzIxd9LHLhhZGzztLrahU/nSMxyojFjdaDfevbutZuP759f29XXyoUUqpCCkOIUmo/Zt7ArsCoBS/63L5i2IMxRDjxBDUsNmO6ftllNZctrDl7pu5eNmOIOqYQ2z7oFEOx5mp4KM0yVQAej0cgHsqcQvtH/a9uPLLi/cM7DsQIQbURUAct211mvFPeuBMvunqfMIEZv+v1pXxEoyg4maSpNJ0zN/zF6+ovXVATDtvHtyzGozMnbpE4TSBGOgxlyJQ26Wsbjzy+uuPd1hOqSqrDimXZJmGQGgdBoILsIQTir74+OnOmfvPN0SuvqAUvhmzeiN8lTndQTiVFDKIRemn94Ude2r21o6euWlMJNu1RCwePe7yDIbzo6o5CtkdRcDxOVRUtvj56883Rqirgi0XBl52aPkrCD3j0w4R3SxnWr17b89jK3fGUWVulmpbryHLrq/A1V3e4zBKHFyNGRWE9PbS5OfSdbze1tIS51YHxucSYh0WZsEY7DsaWPb553e4TDTU6WKl81XmcQNlaJ9dvWCxGr7mm9h++2RSJEMsSks+Y7zoJG8IaKQQbFr33me2/eqO9rkoFzU8YII/WL5TojO3BEPSwZJLedlvj0hujCBqShidwwAhCIsqYppC7bpw3a3LtPU9tURSsKYQyZ5DP3RXJYY9FqWmyf/rBhKU3RikFmyUj5cCCQH4KmZTdvHDGw7d+HGNkUItw7+amEOxxFCiQhFHKLBPdtWziZz5Ta1kwBJNuK+DACMFAzGJXXTj5v2+fTzAyLMpFJFsK5/GO49USCXrn98YvWFBtmjAEC3jfSbhQFeDQXzY3Pfi1jxsWpYy6loUI9igKisXo332j8cora02Tqapkj0QWBIeuPH/yvbd8LJY0hCOzYyBFQT09dNGiuiVLopYl2SORH5xD9Ib502+76pwTfSmVQIREiIISCdbcHPrm3zdSihxmSUjkgaIQi7I7r5tz6XkTehNpRcGEkwZ9/87xkQjEQzJqlhgEmDNEIfi+Wy6qiWimRUksZi25ITp7dkiohRISg4NgbFE2Y3zNt69p6YmnyaxZoZtuAslHskeiSBCuMX5l4cz5s8fjt9/pn/+JauoUNEtIFAPKIO26saMLQybfrUKWkCgRRLJnUIgCfon8APJkTz6Q4Mo8pXy84SleYRYQSdSES3ggCZQNZmXxxkjAx1oks1PODoGHJJAD15en42zPGrrvHXR8D0v2gjYWrkdNM8n0+XjmpUiv4kZKho02JIE4GBV1dHTzM3T9/6GuvbwoU0OEezFqIcsA19ZwFrn4FnLBYu9XAg5JIIc9/ceslfewPWuQVoU0KOHlBZwignaKwI0kMuJ45qXKZ+9BNeNd2gUZgScQtz3seLv1/HdQ934UifJ4ucDIS8zJTfSgcdOU636Gm86WHAo2gXgow2JHrCe/hvqPolAtoubQ5oSoKNWHaiYoS3+N6yYFPB4KcvaLeygjQZd/D/V3FsseCIlM2Lm/E74Iw7RAa0UBJhBlCBP61iPs0CYUrivK9rigJgrXsUOb6FuP8HkIwRUbg0ogBtljYMCGJ1BVA7KK8Fw5sExU1UA3PAH8IwQaDCSCSiBYbILStQ/7v+nQCLAnoAp1IAlELYid965lB9ajUM3wjQejKFTDDqxne9fCAI1a/ul42iGQBBKa4canuevxF77wiXPQFKhFQezM4F0zCD+YHW9nBzdAXsJn7MIo0qvYwQ3seDsYIZ+tnYYIIIH40oFtq1B6ICtvmgPIxmeWZhwswsEKSg9Ag9krnwQEwSOQWDti33uQ6iqoOCNkMGQipGH4Z/LNQlEyLK2jQYOB9GLuSvXBgMiixz5ix9uQGi5IIIPhqSo6W8N1YqUSitoNdshEeedbMobUMDQY+wjVTQ6aMB0wC8RjFHZsN0rEICORt9rQQvjCEF4QwZNUFMIohPEkFTYvDKH8wywGTSVi0KxIzQYJASMQBzu2i9eFnXSfuefCF+j4PB2lGbgtkaUwGEozfJ6OL9Dz+zKIlixoNngIGIH4vEnWvY8P4LPvNkbAkjM1fI6OkjzicRkmfk8yfI6Oz9SAW7mLTEO1KzQbvKmZQSQQ6jvKx1/ZDGII6RjP1ZFYDzAvLAY76Jk3Zjlg0GDfUUmgMQ8MBfPJXl5q6CGKcF7TVBQlEOjkHXBhBB9FCeyWOyhj0GCyFxoPWE4jUBaIM8ZMMlCAsl0YQ0jBeJo2dF6dMthNyTZCYn2u9AAykyLKGvMPootAEUjcXIsnrTxGRpiWOoLGEZB8BsmKYgQ7jCOwc66h4rkwFrh0WPAIlBeU4SYCmuGQtoOBugg7B7gGyIvgEQgTLkafxJRxpayBnWdnKE8LYD41UATizkkNY5FD9boqBeOaIsyP7QQR7OxdQxJ0IArNqnw6R5Di6EARiIe3REHh+qwwiCLIUYS5VxqyLAwj2C1M4CsZzZkHQOH63MFdABAwAonsKUzpyo6BVc/7q4tB7v4YGqwZzyk6ZBg1phBEAuFx0+zlExyXBN1ASnBhsLM3jgKzRKFZSaAgADfNztWBfILrQNBs8BAwCyTWEJ0wm5dCezQbijwBTRHI2Z9Z0OAETqCALVMaNALxlWjrz8SNM0E1FlXMQki0ioigBWB/lhESMUFmEjfOxPVn8k+D1aXBuloAn5KBz7wEmWnbWhBesJHkb9IbMgLmL4mEnQ1mdx7GyExDg4GcmBE8AnEXg2d/mlckOgNxi7H+ouUbjGBnN2nPKGhLsz8dQP+F+PAjYIA0KsMTW/DkuSidyHicnlLSWO7OmKB0Ak+eiye28GLWwPVn4C6Yj7RhZg++YDGyXC+G2QkLmUWEQZBPZbCzeNsIxshKQ1OBnNMTSAsEF60gxkjzFXhSC0rHwQwrCPVQ1Evhl0HCIKj6QLBbD98TEZSO40ktpPkKPsOwlGzaWEEgLRC3QkjRyadug7XrYNkoiKPZATMrw5UXCobdREEZmB8DGlH0QXk3lhFUAkEkRPHMS/GcRSjejbCKNMz2GaifZknMXsD4C6F+CrtpGL4S78ZzFsHKm84SiwFEUAkk9BzGlMvvwA0zWGoA3pqWYOzDNJCjEDQMOyQY7JwewA0zlMvv4MmvIXOwYxYBJpB48Wckiq99QKuOqDRJNZXtMdheA4V5pt0NhuAl2AiFMdtrsD0G1VSVpUgojBY9AGsqQiWQJFAwAaNuGq9rfnDnPf2pkK7FLaLRD1Ksw0ARnJm1qyIUwazDoB+kLKLpanwgHbpv090n9GZe2xHghzCIOpAHvPKC4LSxqu3iO9c+sL93WijSRTAz3zGtdWnWC6+BgH+9zFqXNt8xCWahSNf+2LQfvPWTN/dcgpLpgHcg1OcF0/RkB8dKNNLXdvTsO1b/7MbmJ68+65Xqqi7UoaIDuhWB/lESpmKlUZU5kGx4+cNbnmpd2peujkZiDNfI3pMEAlhUqdISaUt7bPM3Xu64euEZf75o4qYpVYer0wMIFKJxh+NTNnRe+OeDC/f1Tq/SByJqwqJBVH1OhiSQDcqIhml9qPfIwKTfbv/yUztvrA/11ur9CKG+dE1vqj5t6SE1VR/qpYxQJt/vaEMSKAOGMGWKTtLhEKTmB4yaWLoOXBimITUVUROUEYtJw5MFSaBcMIQFSxRsKmKABaE0tnjyQiIHkkAFAdmKIcuDAo9AaxgS/iEJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASviAJJOELkkASvnCqrFQPS8LD67lGFfCid3hlHLwTDOEi3vntBYYvwndL/F5ZgPGp8pLEyhOIwduWqEoI9EpZerd48ONFVEWhKrEogZeoFvVleMc3RhFVhZfHj/ZJ2zApVYh44XQlUWECMcYwxsAehA7396WphcEUFHcb/YO/Ljc+wPqreuMWVeB18sU1ypCioraY1hQiopHRgegclZDJ1bWi0yhjwKLKAY+638hAsCdhmr/Y8O4f2nbsj8VMRivSFZY1nMPCu3wqce8UjKfU1F47s/mOi+dHQ+HKcqhiBBKX/dFA/5eWP/3uwX2arutEqcTtAAzvGeZx23CY5xMMIYPSdDo1Z8Kk5669cXa0oYIcqgyBGI+YDWp99tnHV+/f01RdY1Aey1YIwztwpejOGQ9+/0Q8Pm/8xDVLvlqrh3g0VIEzqsww3qKUYPz4zm2r97U3VtekLEvQp1L/hodKnS28xp6xtGU1VVVt7Tz06Jb1BGOLDu8p8IvKEEjEfX/YvYOoqkUrE/eMARiUqlroj+2tlDGlQm9xrQCBGLyrHaeptSfWoxJF0mfYYIzpCjnYF+tOJXEFdDRABQjkorLjz7EB0BAwrmBPVoBAQvzViTI72mBYZgXOYKwAY2xY1oy6+mgoxBBoIqN/ZZW5fZQPuJaeM4dZVqWc9xiARohppJc0t2BUsSAaU8oqQVyegWLsSy/+/oXW7Y21dRblsXRlRhKnGzA89wohJwb6P3XGjNeuvyWkqBXJjoEUXCn1hSchcW8q+dcvP7eibSdRVV1RK2CCT0OAkGhZlmksOPOspxctnlxdU0khcUNrz8ea6ytyBuC2ufb1622bnty1rb2n26AURhOn4U0dHYjOUQmZXld//axzv37+xTpRREZodE7AhSDMzuNd+Ja7Nvx62QWqAiZwtM8C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" alt="" width="72" height="72">
     <h1>Group Connect</h1>
     <p>Enter your PIN / password to open</p>
+    <p class="credit-lock">Developed by Anil Sharma<br>Former General Manager, Central Bank of India</p>
     <input id="pin" class="inp" type="password" inputmode="text" autocomplete="off" aria-label="PIN or password">
     <div id="pin-err" class="bad" role="alert"></div>
     <button class="btn primary" type="submit">🔓 Unlock</button>
@@ -232,6 +242,7 @@ input.inp[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearan
 </nav>
 
 <main id="view" tabindex="-1"><div class="loading">Loading…</div></main>
+<footer class="credit" id="credit">Developed by <b>Anil Sharma</b> · Former General Manager, Central Bank of India</footer>
 <div id="modal-root"></div>
 <div id="toast" aria-live="polite"></div>
 <noscript><p style="padding:20px">Group Connect needs JavaScript. Please enable it.</p></noscript>
@@ -243,7 +254,7 @@ input.inp[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearan
 (function (root) {
   'use strict';
   const GC = root.GC || (root.GC = {});
-  GC.VERSION = '1.2.0';      // keep in step with CACHE in service-worker.js (group-connect-v<VERSION>)
+  GC.VERSION = '1.3.0';      // keep in step with CACHE in service-worker.js (group-connect-v<VERSION>)
   GC.BG_SYNC = false;         // true only when the service worker can run reminders itself (multi-file build); the single-file build sets false
 
   /* ---------- tiny helpers ---------- */
@@ -2311,6 +2322,121 @@ input.inp[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearan
   };
 })(typeof self !== 'undefined' ? self : this);
 
+/* ==== voice.js ==== */
+/* Group Connect – Voice assistant: ask by voice (or typing) and hear the answer.
+   Answers are worked out locally from the data on this device and the Help topics; nothing is sent to any server by this app.
+   Speech-to-text is done by the phone's browser (Safari / Chrome) and may be processed by Apple/Google – the user is told this before first use. */
+(function (root) {
+  'use strict';
+  const GC = root.GC, UI = GC.ui, esc = UI.esc, V = GC.views;
+  const SR = root.SpeechRecognition || root.webkitSpeechRecognition;
+  const TTS = 'speechSynthesis' in root && typeof root.SpeechSynthesisUtterance === 'function';
+  const STOP = new Set('the a an of for is are was when who what whose which how many much do does did my me to on in at and tell give show about please can you list any there their his her have has with from this that today birthday birthdays birth day date born anniversary anniversaries remembrance death number mobile phone member members'.split(' '));
+  const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const say = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  const when = o => o.inDays === 0 ? 'today' : o.inDays === 1 ? 'tomorrow' : 'on ' + GC.fmtDate(o.date, { noYear: true }) + ', in ' + say(o.inDays, 'day');
+  const line = o => { const m = o.member, nm = GC.nameH(m);
+    if (o.type === 'birthday') return `${nm}'s birthday ${when(o)}${o.years ? ', turning ' + o.years : ''}`;
+    return `${nm}: ${o.type === 'birth_anniv' ? 'birth anniversary' : 'death anniversary'} ${when(o)}${o.years ? ', ' + say(o.years, 'year') : ''}`; };
+  const readList = (a, max) => a.slice(0, max).map(line).join('. ') + (a.length > max ? `. And ${a.length - max} more.` : '.');
+
+  /* Work out an answer from local data. Returns plain text. */
+  GC.voiceAnswer = async function (raw) {
+    const q = norm(raw); if (!q) return 'I did not catch that. Please try again.';
+    const S = await GC.getSettings(), members = await GC.db.all('members'), today = GC.nowParts(S.tz).date;
+    const has = (...w) => w.some(x => q.includes(x));
+    const living = members.filter(m => m.status === 'living'), dead = members.filter(m => m.status !== 'living');
+    const upto = d => GC.upcoming(members, today, d);
+    const days = has('tomorrow') ? 1 : has('this week', 'next week', 'seven days', '7 days', 'week') ? 7 : has('fifteen', '15 days') ? 15 : has('this month', 'next month', 'thirty', '30 days', 'month') ? 30 : 0;
+    const label = days === 0 ? 'today' : days === 1 ? 'tomorrow' : days === 7 ? 'in the next 7 days' : days === 15 ? 'in the next 15 days' : 'in the next 30 days';
+    const only = types => { const all = days === 1 ? upto(1).filter(o => o.inDays === 1) : upto(days); return all.filter(o => types.includes(o.type)); };
+
+    if (has('how many', 'total', 'count')) {
+      if (has('deceased', 'memory', 'remembered', 'passed')) return `${say(dead.length, 'member')} ${dead.length === 1 ? 'is' : 'are'} remembered in the In Loving Memory section.`;
+      if (has('living')) return `There ${living.length === 1 ? 'is' : 'are'} ${say(living.length, 'living member')}.`;
+      if (has('group')) return `You have ${say((S.groups || []).length, 'WhatsApp group')}.`;
+      return `There are ${say(members.length, 'member')} in all: ${living.length} living and ${dead.length} in memory.`;
+    }
+    if (has('pending', 'not sent', 'unsent', 'to do', 'action')) {
+      const logs = await GC.db.all('messageLog'); const p = logs.filter(r => ['prepared', 'copied', 'opened'].includes(r.status)).length;
+      return p ? `You have ${say(p, 'greeting')} prepared or opened but not yet confirmed as sent. Open the Reports page, Messages pending action.` : 'No greetings are waiting for confirmation.';
+    }
+    if (has('death', 'passed away', 'remembrance', 'memory', 'anniversary', 'anniversaries') && !has('how to', 'how do')) {
+      const a = only(['death_anniv', 'birth_anniv']); return a.length ? `Remembrance ${label}: ` + readList(a, 6) : `No remembrance dates ${label}.`;
+    }
+    if (has('birthday', 'birthdays', 'born') && !has('how to', 'how do', 'how can', 'send', 'message', 'wish')) {
+      // a named person?
+      const words = q.split(' ').filter(w => w.length > 2 && !STOP.has(w));
+      const hit = words.length ? members.filter(m => { const n = norm(m.name); return words.every(w => n.includes(w)); }) : [];
+      if (hit.length && hit.length <= 3) return hit.map(m => { const o = GC.occasionsOf(m).find(x => x.type === 'birthday'); if (m.status !== 'living') return `${GC.nameH(m)} is in the memory section.`; if (!o) return `${GC.nameH(m)} has no birthday date saved.`; const n = GC.nextOcc(o.m, o.d, today); return `${GC.nameH(m)}'s birthday is on ${GC.fmtDate(n.date, { noYear: true })}${o.srcYear ? ', turning ' + (n.year - o.srcYear) : ''}.`; }).join(' ');
+      const a = only(['birthday']); return a.length ? `Birthdays ${label}: ` + readList(a, 8) : `No birthdays ${label}.`;
+    }
+    if (has('upcoming', 'next', 'coming', 'soon', 'occasion', 'today', 'tomorrow')) {
+      const a = days ? upto(days) : upto(0); return a.length ? `${label[0].toUpperCase() + label.slice(1)}: ` + readList(a, 8) : `Nothing ${label}.`;
+    }
+    if (has('mobile', 'phone', 'number', 'contact')) {
+      const words = q.split(' ').filter(w => w.length > 2 && !STOP.has(w)); const hit = words.length ? members.filter(m => { const n = norm(m.name); return words.every(w => n.includes(w)); }) : [];
+      if (hit.length === 1) { const m = hit[0]; if (m.status !== 'living') return 'The mobile number of a remembered member is kept private.'; return m.mobile ? `${GC.nameH(m)}'s mobile number is ${m.mobile.replace(/\D/g, '').split('').join(' ')}.` : `${GC.nameH(m)} has no mobile number saved.`; }
+    }
+    // otherwise: help topics
+    const t = GC.helpSearch && GC.helpSearch(raw);
+    if (t) return `${t.title}. ${t.text}`;
+    return 'I could not find an answer to that. You can ask, for example: who has a birthday today, birthdays this week, how many members, or how do I import from Excel.';
+  };
+
+  /* ---------- speaking ---------- */
+  let voiceOn = true, speaking = false;
+  function pickVoice() { const vs = root.speechSynthesis.getVoices(); return vs.find(v => /en-IN/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null; }
+  GC.speak = function (text) {
+    if (!TTS || !voiceOn) return; root.speechSynthesis.cancel();
+    const u = new root.SpeechSynthesisUtterance(text.replace(/[🎂🕯️🕊️]/gu, '')); u.lang = 'en-IN'; u.rate = .95; const v = pickVoice(); if (v) u.voice = v;
+    u.onstart = () => { speaking = true; }; u.onend = u.onerror = () => { speaking = false; };
+    root.speechSynthesis.speak(u);
+  };
+  GC.stopSpeaking = () => { if (TTS) root.speechSynthesis.cancel(); };
+
+  /* ---------- the card on the Help page ---------- */
+  V.voiceCard = function () {
+    return `<div class="card voice-card" id="voice-card"><h2>🎤 Voice assistant</h2>
+      <p class="small muted">Tap the microphone, then ask – for example “Who has a birthday today?”, “Birthdays this week”, “How many members?” or “How do I import from Excel?”. The answer is shown and read aloud.</p>
+      <div class="btn-row"><button class="btn primary big-mic" id="v-mic" type="button" ${SR ? '' : 'disabled'}>🎤 Tap and speak</button><button class="btn" id="v-stop" type="button">⏹ Stop reading</button>
+        <label class="chk"><input type="checkbox" id="v-on" checked> Read answers aloud</label></div>
+      <div class="btn-row"><input id="v-text" class="inp" style="flex:1;min-width:180px" type="text" placeholder="…or type your question here" aria-label="Type your question"><button class="btn" id="v-go" type="button">Ask</button></div>
+      <div id="v-status" class="small muted" role="status" aria-live="polite">${SR ? '' : 'Voice input is not available in this browser (try Safari on iPhone or Chrome on Android). You can still type your question and hear the answer.'}</div>
+      <div id="v-ans" class="v-ans" aria-live="polite" hidden></div>
+      <p class="small muted">Privacy: answers are worked out on your device from your own data. Turning your voice into text is done by your phone's browser, which may send the audio to Apple or Google. Names and dates are spoken aloud – use it where others cannot overhear. Mobile numbers of remembered members are never read out.</p></div>`;
+  };
+  V.voiceInit = function (el) {
+    const $ = s => el.querySelector(s); const mic = $('#v-mic'), st = $('#v-status'), ans = $('#v-ans'), txt = $('#v-text'); if (!mic) return;
+    const show = async (question) => {
+      st.textContent = 'Thinking…'; let a; try { a = await GC.voiceAnswer(question); } catch (e) { a = 'Sorry, something went wrong while finding the answer.'; }
+      ans.hidden = false; ans.innerHTML = `<p class="small muted">You asked: <i>${esc(question)}</i></p><p class="v-a">${esc(a)}</p>`; st.textContent = ''; GC.speak(a);
+    };
+    $('#v-go').onclick = () => { const q = txt.value.trim(); if (q) show(q); };
+    txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#v-go').click(); } });
+    $('#v-stop').onclick = () => GC.stopSpeaking();
+    $('#v-on').onchange = e => { voiceOn = e.target.checked; if (!voiceOn) GC.stopSpeaking(); };
+    if (!SR) return;
+    let rec = null, listening = false;
+    mic.onclick = async () => {
+      if (listening && rec) { rec.stop(); return; }
+      const S = await GC.getSettings();
+      if (!S.voiceConsent) {
+        const okc = await UI.confirm({ title: 'Use your voice?', message: 'To turn speech into text, your phone\u2019s browser may send your voice to Apple or Google. Group Connect itself sends nothing anywhere. Continue?', okLabel: 'Yes, use voice' });
+        if (!okc) return; await GC.setSetting('voiceConsent', true);
+      }
+      GC.stopSpeaking(); rec = new SR(); rec.lang = 'en-IN'; rec.interimResults = false; rec.maxAlternatives = 1; rec.continuous = false;
+      rec.onstart = () => { listening = true; mic.textContent = '🔴 Listening… tap to stop'; st.textContent = 'Listening – please speak now.'; };
+      rec.onresult = e => { const t = (e.results[0] && e.results[0][0] && e.results[0][0].transcript) || ''; txt.value = t; show(t); };
+      rec.onerror = e => { st.textContent = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Microphone permission was denied. Allow the microphone for this site in your browser settings, or type your question.' : e.error === 'no-speech' ? 'I heard nothing. Tap the microphone and try again.' : 'Voice input stopped (' + e.error + '). You can type your question instead.'; };
+      rec.onend = () => { listening = false; mic.textContent = '🎤 Tap and speak'; };
+      try { rec.start(); } catch (e) { st.textContent = 'Could not start the microphone. Please try again.'; }
+    };
+    el.addEventListener('GC-leave', () => { GC.stopSpeaking(); if (rec) try { rec.abort(); } catch (e) { } });
+  };
+  window.addEventListener('hashchange', () => GC.stopSpeaking());
+})(typeof self !== 'undefined' ? self : this);
+
 /* ==== help.js ==== */
 /* Group Connect – Help & "Ask a question" (works offline; searches the built-in answers). */
 (function (root) {
@@ -2393,8 +2519,19 @@ input.inp[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearan
       `<p>Everything is stored in this browser on this device. Nothing is uploaded; the app is blocked from contacting any outside server except when <i>you</i> tap a WhatsApp link. Keep encrypted backups and set a PIN.</p>`]
   ];
 
+  /* best matching help topic for a spoken/typed question -> { title, text } (plain text, first sentences) */
+  GC.helpSearch = function (question) {
+    const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ');
+    const words = norm(question).split(/\s+/).filter(w => w.length > 2 && !['the', 'how', 'can', 'what', 'and', 'for', 'you', 'does', 'did', 'was', 'are', 'with', 'this', 'that', 'want', 'need'].includes(w));
+    if (!words.length) return null; let best = null;
+    for (const [, title, kw, html] of TOPICS) { const tt = norm(title + ' ' + kw), hay = norm(html.replace(/<[^>]+>/g, ' ')); let s = 0; words.forEach(w => { if (tt.includes(w)) s += 3; else if (hay.includes(w)) s += 1; }); if (s > 0 && (!best || s > best.s)) best = { s, title, html }; }
+    if (!best) return null;
+    const plain = best.html.replace(/<\/(p|li)>/g, '. ').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, 'and').replace(/\s+/g, ' ').replace(/\.\s*\./g, '.').trim();
+    return { title: best.title, text: plain.split(/(?<=[.!?])\s+/).slice(0, 4).join(' ') };
+  };
   V.help = async el => {
     el.innerHTML = `<div class="page-head"><h1>❓ Help &amp; Ask</h1></div>
+      ${V.voiceCard ? V.voiceCard() : ''}
       <div class="card">
         <label for="ask-q">Ask a question <span class="muted">– type a few words, e.g. “edit message”, “forgot pin”, “import excel”</span></label>
         <input id="ask-q" class="inp" type="search" placeholder="🔍 What do you want to do?" autocomplete="off">
@@ -2402,7 +2539,9 @@ input.inp[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearan
         <div class="btn-row"><a class="btn sm" href="#/add">➕ Add member</a><a class="btn sm" href="#/data">📥 Import</a><a class="btn sm" href="#/messages">✉️ Edit messages</a><a class="btn sm" href="#/reminders">🔔 Reminders</a><a class="btn sm" href="#/settings">🔒 Set PIN</a></div>
       </div>
       <div id="faq">${TOPICS.map(([id, q, , a]) => `<details class="card faq" data-id="${id}"><summary><b>${esc(q)}</b></summary><div class="faq-a">${a}</div></details>`).join('')}</div>
+      <div class="card"><h2>About</h2><p class="small">Group Connect – Birthday &amp; Remembrance Manager, version ${GC.VERSION}.<br>Developed by <b>Anil Sharma</b>, Former General Manager, Central Bank of India.</p></div>
       <div class="card"><h2>Still stuck?</h2><p class="small">Tell the person who set up the app what you were doing and what you saw on the screen. If something looks wrong, first download a backup (Data page) before trying anything drastic.</p></div>`;
+    if (V.voiceInit) V.voiceInit(el);
     const q = el.querySelector('#ask-q'), res = el.querySelector('#ask-res');
     const cards = [...el.querySelectorAll('.faq')];
     const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ');

@@ -1,6 +1,6 @@
 /* Group Connect (single-file build) – offline cache + notification tap. Place next to index.html.
    No background sync here: reminders are checked when the app is open. */
-const VERSION = '1.2.0';                       // must equal GC.VERSION inside index.html
+const VERSION = '1.3.0';                       // must equal GC.VERSION inside index.html
 const PREFIX = 'group-connect-';
 const CACHE = PREFIX + 'v' + VERSION;
 const ASSETS = ['./', 'index.html', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
